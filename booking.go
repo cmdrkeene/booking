@@ -22,27 +22,40 @@ const RateWithoutBunny = 250
 
 type dateRange struct {
 	Start    time.Time
-	Duration time.Time
+	Duration time.Duration
+}
+
+// order of dates doesn't matter. Start is earlier time.
+func newDateRange(t1, t2 time.Time) dateRange {
+	if t1.Before(t2) {
+		return dateRange{Start: t1, Duration: t2.Sub(t1)}
+	} else {
+		return dateRange{Start: t2, Duration: t1.Sub(t2)}
+	}
 }
 
 type bookingService struct{}
 
-func (s bookingService) Book(guest, dateRange) (booking, error) {}
-func (s bookingService) Purchase(payment, booking) error        {}
-func (s bookingService) Offer(swap) error                       {}
+func (s bookingService) Book(guest, dateRange) (booking, error) {
+	return booking{}, nil
+}
+func (s bookingService) Purchase(payment, booking) error { return nil }
+func (s bookingService) Offer(swap) error                { return nil }
 
 type calendar struct{}
 
-func (c calendar) IsAvailable(dateRange) bool
-func (c calendar) IsBusy(dateRange) bool
-func (c calendar) MarkAvailable(dateRange) error
-func (c calendar) MarkBusy(dateRange) error
+func (c calendar) IsAvailable(dateRange) bool    { return false }
+func (c calendar) IsBusy(dateRange) bool         { return false }
+func (c calendar) MarkAvailable(dateRange) error { return nil }
+func (c calendar) MarkBusy(dateRange) error      { return nil }
 
 type guestService struct {
 	guests []guest
 }
 
-func (s guestService) Register(name, email string) (guest, error) {}
+func (s guestService) Register(name, email string) (guest, error) {
+	return guest{}, nil
+}
 
 // When we offer the apartment
 type availability struct {
