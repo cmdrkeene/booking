@@ -38,7 +38,9 @@ func (c calendar) IsBusy(dateRange) bool
 func (c calendar) MarkAvailable(dateRange) error
 func (c calendar) MarkBusy(dateRange) error
 
-type guestService struct{}
+type guestService struct {
+	guests []guest
+}
 
 func (s guestService) Register(name, email string) (guest, error) {}
 
