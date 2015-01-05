@@ -1,57 +1,44 @@
 package booking
 
 import (
-	"reflect"
 	"testing"
 	"time"
 )
 
-func TestDateRange(t *testing.T) {
-	tests := []struct {
-		t1 time.Time
-		t2 time.Time
-		r  dateRange
+var feb1 = time.Date(2015, 2, 1, 0, 0, 0, 0, time.UTC)
+var mar1 = time.Date(2015, 3, 1, 0, 0, 0, 0, time.UTC)
+
+func TestCalendar(t *testing.T) {
+	newCalendar := func() calendar {
+		c := calendar{}
+		c.SetAvailable(newDateRange(feb1, 2))
+		c.SetAvailable(newDateRange(mar1, 2))
+		c.SetBooked(newDateRange(mar1, 2))
+		return c
+	}
+
+	var tests = []struct {
+		dates   dateRange
+		canBook bool
 	}{
-		// t1 before t2
-		{
-			time.Date(2015, 2, 1, 0, 0, 0, 0, time.UTC),
-			time.Date(2015, 2, 3, 0, 0, 0, 0, time.UTC),
-			dateRange{
-				Start:    time.Date(2015, 2, 1, 0, 0, 0, 0, time.UTC),
-				Duration: 48 * time.Hour,
-			},
-		},
-		// t2 before t1
-		{
-			time.Date(2015, 2, 3, 0, 0, 0, 0, time.UTC),
-			time.Date(2015, 2, 1, 0, 0, 0, 0, time.UTC),
-			dateRange{
-				Start:    time.Date(2015, 2, 1, 0, 0, 0, 0, time.UTC),
-				Duration: 48 * time.Hour,
-			},
-		},
-		// t1 equals t2
-		{
-			time.Date(2015, 2, 1, 0, 0, 0, 0, time.UTC),
-			time.Date(2015, 2, 1, 0, 0, 0, 0, time.UTC),
-			dateRange{
-				Start:    time.Date(2015, 2, 1, 0, 0, 0, 0, time.UTC),
-				Duration: 0,
-			},
-		},
+		{newDateRange(feb1, 1), true},            // available
+		{newDateRange(feb1, 2), true},            // available
+		{newDateRange(feb1, 3), false},           // overran availability
+		{newDateRange(feb1.Add(-day), 2), false}, // underran availability
+		{newDateRange(mar1, 1), false},           // booked
+		{newDateRange(mar1, 2), false},           // booked
+		{newDateRange(mar1.Add(day), 2), false},  // booked / overran availability
 	}
 
 	for _, tt := range tests {
-		r := newDateRange(tt.t1, tt.t2)
-		if !reflect.DeepEqual(tt.r, r) {
-			t.Error("want", tt.r)
-			t.Error("got ", r)
+		c := newCalendar()
+		if c.SetBooked(tt.dates) != tt.canBook {
+			t.Error("requesting", tt.dates)
+			t.Error("want", tt.canBook)
+			t.Error("got ", !tt.canBook)
+			t.Error(c)
 		}
 	}
-}
-
-func TestCalendar(t *testing.T) {
-	// c := calendar{}
 }
 
 func TestBook(t *testing.T) {
