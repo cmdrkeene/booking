@@ -21,12 +21,3 @@ func TestEverything(t *testing.T) {
 	// - send email to guest
 	// - send email to manager
 }
-
-func TestGuestRegister(t *testing.T) {
-	// success
-	// fail existing user
-	// fail missing name
-	// fail missing email
-	// fail short name
-	// fail invalid email
-}
