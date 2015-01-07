@@ -2,6 +2,11 @@ package booking
 
 import "time"
 
+// Manages payments and accounting
+type Billing interface {
+	Charge(guestId, creditCard, amount) error
+}
+
 type creditCard struct {
 	Name            string
 	Number          string

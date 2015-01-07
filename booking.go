@@ -1,5 +1,13 @@
 /* Actions
 
+TODO define top level interfaces for services
+TODO test reservation service (crud for reservation records)
+TODO test billing service with dummy processor
+TODO test workflow state transitions, errors from services
+TODO basic controller/pages for workflow
+TODO workflow to offer aparment swap
+TODO admin workflow
+
 As an admin,
 
 - mark dates as available, unavailable
@@ -53,32 +61,28 @@ import (
 	"time"
 )
 
-const rateWithBunny = 150
-const rateWithoutBunny = 250
-const day = 24 * time.Hour
-
-// state machine to orchestrates a guest paying for a reservation
-type bookingWorkflow struct {
+// Workflow to orchestrate a guest paying for a reservation
+type booking struct {
 	created time.Time
 	dates   dateRange
 	guestId guestId
-	state   bookingWorkflowState
+	state   bookingState
 }
 
-type bookingWorkflowState int
+type bookingState int
 
 const (
-	bookingStarted bookingWorkflowState = iota
+	bookingStarted bookingState = iota
 	bookingNeedsPayment
 	bookingFinished
 )
 
-func (w *bookingWorkflow) IsStarted() bool      { return w.state == bookingStarted }
-func (w *bookingWorkflow) IsNeedsPayment() bool { return w.state == bookingNeedsPayment }
-func (w *bookingWorkflow) IsFinished() bool     { return w.state == bookingFinished }
+func (b *booking) IsStarted() bool      { return w.state == bookingStarted }
+func (b *booking) IsNeedsPayment() bool { return w.state == bookingNeedsPayment }
+func (b *booking) IsFinished() bool     { return w.state == bookingFinished }
 
-func startBookingWorkflow(g guestId) *bookingWorkflow {
-	w := &bookingWorkflow{
+func startBooking(g guestId) *bookingWorkflow {
+	w := &booking{
 		created: time.Now(),
 		guestId: g,
 		state:   bookingStarted,
@@ -87,20 +91,20 @@ func startBookingWorkflow(g guestId) *bookingWorkflow {
 	return w
 }
 
-func (w *bookingWorkflow) ChooseDates(r dateRange) error {
-	if !w.IsStarted() {
+func (b *booking) ChooseDates(r dateRange) error {
+	if !b.IsStarted() {
 		return errors.New("invalid session state")
 	}
 
 	// check availability
 
 	// mark as needsPayment
-	w.state = bookingNeedsPayment
+	b.state = bookingNeedsPayment
 	log.Print("chose dates", r)
 	return nil
 }
 
-func (w *bookingWorkflow) Pay(creditCard) error {
+func (b *booking) Pay(creditCard) error {
 	if !w.IsNeedsPayment() {
 		return errors.New("invalid session state")
 	}
@@ -108,53 +112,4 @@ func (w *bookingWorkflow) Pay(creditCard) error {
 	// tell billing to capture payment
 	// tell booking to confirm reservation
 	return nil
-}
-
-type dateRange struct {
-	NumDays int
-	Start   time.Time
-}
-
-func newDateRange(start time.Time, numDays int) dateRange {
-	return dateRange{Start: start, NumDays: numDays}
-}
-
-func (r dateRange) Days() []time.Time {
-	var days []time.Time
-	for i := 0; i < r.NumDays; i++ {
-		delta := time.Duration(i) * day
-		days = append(days, r.Start.Add(delta))
-	}
-	return days
-}
-
-const dayFormat = "January 2, 2006"
-
-func (r dateRange) String() string {
-	t1 := r.Start.Format(dayFormat)
-	t2 := r.Start.Add(time.Duration(r.NumDays) * day).Format(dayFormat)
-	return t1 + " to " + t2
-}
-
-type bookingService struct{}
-
-func (s bookingService) Book(guest, dateRange) error {
-	return nil
-}
-
-func (s bookingService) Offer(swap) error { return nil }
-
-type booking struct {
-	Bunny bool // will they watch the bunny?
-	Guest guest
-}
-
-// TODO mark accepted or delete / log / audit
-type swap struct {
-	Address     string
-	Attachments []byte
-	Bunny       bool
-	Dates       dateRange
-	Description string // roomate apartment, studio, roomates, images
-	Guest       guest
 }

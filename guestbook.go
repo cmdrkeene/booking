@@ -1,24 +1,28 @@
 package booking
 
+// Manages guest records
+type Guestbook interface {
+	Register(name, email string) (guestId, error)
+	Find(guestId) (guest, error)
+}
+
 type guestId string
 
 // The rando sleeping/having-sex in your bed
 type guest struct {
-	Name          string
-	Email         string
-	Id            guestId
-	PaymentTokens []paymentToken
+	Email string
+	Id    guestId
+	Name  string
 }
 
 type guestbook struct {
 	guests []guest
 }
 
-func (g guestbook) Register(name, email string) (guest, error) {
-	return guest{}, nil
+func (g guestbook) Register(name, email string) (guestId, error) {
+	return guestId{}, nil
 }
 
-// trades creditCard for paymentToken and
-func (g guestbook) AddCard(guest, creditCard) error {
-	return nil
+func (g guestbook) Find(id guestId) (guest, error) {
+	return guest{}, nil
 }
