@@ -76,7 +76,11 @@ func (g guestbook) Register(name, email string) (guestId, error) {
 }
 
 func (g guestbook) Find(id guestId) (guest, error) {
-	return guest{}, nil
+	if record, ok := g.guests[id]; ok {
+		return record, nil
+	}
+
+	return guest{}, notFound
 }
 
 func (g guestbook) findByEmail(s string) (guest, error) {

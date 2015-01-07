@@ -2,6 +2,32 @@ package booking
 
 import "testing"
 
+func TestGuestbookFind(t *testing.T) {
+	gb := newGuestbook()
+	id, err := gb.Register("Brandon", "brandon@example.com")
+	if err != nil {
+		t.Error(err)
+	}
+
+	// not found
+	_, err = gb.Find(guestId("999"))
+	if err != notFound {
+		t.Error("want", notFound)
+		t.Error("got s", err)
+	}
+
+	// found
+	record, err := gb.Find(id)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if record.Email != "brandon@example.com" {
+		t.Error("want", "brandon@example.com")
+		t.Error("got ", record.Email)
+	}
+}
+
 func TestGuestbookRegister(t *testing.T) {
 	gb := newGuestbook()
 
