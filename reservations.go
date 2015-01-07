@@ -7,7 +7,10 @@ import (
 
 // Manages room inventory for dates
 type Reservations interface {
+	Rates(dateRange) []rate
 	Reserve(guestId, dateRange, rate) error
+	List(guestId) ([]reservation, error)
+	Cancel(reservationId) error
 }
 
 type reservationId string
@@ -29,12 +32,6 @@ type rate struct {
 var rateComplimentary = rate{Amount: amount{0}, Name: "Complimentary"}
 var rateWithBunny = rate{Amount: amount{10000}, Name: "With Bunny"}
 var rateWithoutBunny = rate{Amount: amount{25000}, Name: "Without Bunny"}
-
-type reservationService struct{}
-
-func (rs reservationService) Reserve(guestId, dateRange, rate) (reservationId, error) {
-	return reservationId{}, nil
-}
 
 type calendar map[time.Time]availability
 

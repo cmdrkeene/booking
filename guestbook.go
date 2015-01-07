@@ -20,7 +20,7 @@ type guestbook struct {
 }
 
 func (g guestbook) Register(name, email string) (guestId, error) {
-	return guestId{}, nil
+	return "", nil
 }
 
 func (g guestbook) Find(id guestId) (guest, error) {
