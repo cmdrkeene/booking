@@ -12,14 +12,16 @@ As a guest
 - submit an offer
 - make a booking (pay for it too)
 
-## Departments
+## Departments/Servives
+
+BookingWorkflow - a coordinator that requires payment for bookings
 
 Guestbook
 \_Guest - a record of a person staying at the hotel
 
-Booking - manages inventory (room(s) on dates)
+Reservation - manages inventory (room(s) on dates)
 \_Calendar - a master record of available/confirmed dates
-\_Reservation - a record of guest's payment for dates
+\_Booking - a record of guest's payment for dates
 
 Billing - manages bookeeping, credit cards
 \_CreditCard - unsaved raw card information
@@ -55,57 +57,57 @@ const rateWithBunny = 150
 const rateWithoutBunny = 250
 const day = 24 * time.Hour
 
-type sessionId string
-type sessionState int
-
-var sessionStateError = errors.New("invalid session state")
-
-const (
-	sessionStarted sessionState = iota
-	sessionNeedsPayment
-	sessionComplete
-)
-
-// state machine to orchestrates guest, payment, and booking
-type session struct {
+// state machine to orchestrates a guest paying for a reservation
+type bookingWorkflow struct {
 	created time.Time
 	dates   dateRange
 	guestId guestId
-	id      sessionId
-	state   sessionState
+	state   bookingWorkflowState
 }
 
-func newSession(guestId) *session {
-	s := &session{
-		id:      sessionId("new"),
+type bookingWorkflowState int
+
+const (
+	bookingStarted bookingWorkflowState = iota
+	bookingNeedsPayment
+	bookingFinished
+)
+
+func (w *bookingWorkflow) IsStarted() bool      { return w.state == bookingStarted }
+func (w *bookingWorkflow) IsNeedsPayment() bool { return w.state == bookingNeedsPayment }
+func (w *bookingWorkflow) IsFinished() bool     { return w.state == bookingFinished }
+
+func startBookingWorkflow(g guestId) *bookingWorkflow {
+	w := &bookingWorkflow{
 		created: time.Now(),
-		guestId: guestId,
-		state:   sessionStarted,
+		guestId: g,
+		state:   bookingStarted,
 	}
-	log.Print("session creates", s)
-	return s
+	log.Print("booking workflow started", w)
+	return w
 }
 
-func (s *session) ChooseDates(r dateRange) error {
-	if s.state != sessionStarted {
+func (w *bookingWorkflow) ChooseDates(r dateRange) error {
+	if !w.IsStarted() {
 		return errors.New("invalid session state")
 	}
 
 	// check availability
 
 	// mark as needsPayment
-	s.state = sessionNeedsPayment
+	w.state = bookingNeedsPayment
 	log.Print("chose dates", r)
 	return nil
 }
 
-func (s *session) Pay(creditCard) error {
-	if s.state != sessionNeedsPayment {
-		return errors.New("session must be needs payment")
+func (w *bookingWorkflow) Pay(creditCard) error {
+	if !w.IsNeedsPayment() {
+		return errors.New("invalid session state")
 	}
 
 	// tell billing to capture payment
 	// tell booking to confirm reservation
+	return nil
 }
 
 type dateRange struct {
