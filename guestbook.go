@@ -24,8 +24,8 @@ type guest struct {
 
 var (
 	emailExists  = errors.New("email exists")
-	emailMissing = errors.New("email missing")
 	emailInvalid = errors.New("email invalid")
+	emailMissing = errors.New("email missing")
 	nameMissing  = errors.New("name missing")
 	notFound     = errors.New("not found")
 )
