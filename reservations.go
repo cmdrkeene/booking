@@ -7,10 +7,7 @@ import (
 
 // Manages room inventory for dates
 type Reservations interface {
-	Rates(dateRange) []rate
-	Reserve(guestId, dateRange, rate) error
-	List(guestId) ([]reservation, error)
-	Cancel(reservationId) error
+	Reserve(guestId, dateRange, rateCode) error
 }
 
 type reservationId string
@@ -21,31 +18,50 @@ type reservation struct {
 	Created time.Time
 	GuestId guestId
 	Dates   dateRange
-	Rate    rate
+	Rate    rateCode
 }
 
-type rate struct {
-	Amount amount
-	Name   string
+type rateCode int
+
+const (
+	rateWithBunny rateCode = iota
+	rateWithoutBunny
+)
+
+func rateAmount(c rateCode) amount {
+	switch c {
+	case rateWithoutBunny:
+		return amount{25000}
+	case rateWithBunny:
+		return amount{10000}
+	default:
+		panic("unknown rate code")
+	}
 }
 
-var rateComplimentary = rate{Amount: amount{0}, Name: "Complimentary"}
-var rateWithBunny = rate{Amount: amount{10000}, Name: "With Bunny"}
-var rateWithoutBunny = rate{Amount: amount{25000}, Name: "Without Bunny"}
+// sparse map of available or booked dates
+type calendar map[time.Time]event
 
-type calendar map[time.Time]availability
+// if event is on calendar, it is assumed to be available
+type event struct {
+	reservationId reservationId
+}
 
-type availability struct {
-	Booked bool
+func (e event) Available() bool {
+	return !e.Reserved()
+}
+
+func (e event) Reserved() bool {
+	return len(e.reservationId) > 0
 }
 
 func (c calendar) String() string {
 	var lines []string
 	lines = append(lines, "\n== Calendar ==")
-	for t, a := range c {
+	for t, event := range c {
 		l := t.Format(dayFormat)
-		if a.Booked {
-			l = l + " (Booked)"
+		if event.Reserved() {
+			l = l + " (Reserved)"
 		}
 		lines = append(lines, l)
 	}
@@ -54,25 +70,25 @@ func (c calendar) String() string {
 
 func (c calendar) SetAvailable(r dateRange) {
 	for _, t := range r.Days() {
-		c[t] = availability{Booked: false}
+		c[t] = event{}
 	}
 }
 
-func (c calendar) SetBooked(r dateRange) bool {
+func (c calendar) Reserve(dr dateRange, ri reservationId) bool {
 	// check if all available and not booked
-	for _, t := range r.Days() {
-		a, ok := c[t]
+	for _, t := range dr.Days() {
+		event, ok := c[t]
 		if !ok {
-			return false // unavailable
+			return false // not available
 		}
-		if a.Booked {
-			return false // booked
+		if event.Reserved() {
+			return false
 		}
 	}
 
 	// mark it
-	for _, t := range r.Days() {
-		c[t] = availability{Booked: true}
+	for _, t := range dr.Days() {
+		c[t] = event{reservationId: ri}
 	}
 	return true
 }

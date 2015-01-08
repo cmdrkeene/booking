@@ -6,6 +6,7 @@ import (
 )
 
 func TestCalendar(t *testing.T) {
+	var resId = reservationId("999")
 	var feb1 = time.Date(2015, 2, 1, 0, 0, 0, 0, time.UTC)
 	var mar1 = time.Date(2015, 3, 1, 0, 0, 0, 0, time.UTC)
 
@@ -13,13 +14,13 @@ func TestCalendar(t *testing.T) {
 		c := calendar{}
 		c.SetAvailable(newDateRange(feb1, 2))
 		c.SetAvailable(newDateRange(mar1, 2))
-		c.SetBooked(newDateRange(mar1, 2))
+		c.Reserve(newDateRange(mar1, 2), resId)
 		return c
 	}
 
 	var tests = []struct {
-		dates   dateRange
-		canBook bool
+		dates      dateRange
+		canReserve bool
 	}{
 		{newDateRange(feb1, 1), true},            // available
 		{newDateRange(feb1, 2), true},            // available
@@ -32,10 +33,10 @@ func TestCalendar(t *testing.T) {
 
 	for _, tt := range tests {
 		c := newCalendar()
-		if c.SetBooked(tt.dates) != tt.canBook {
+		if c.Reserve(tt.dates, resId) != tt.canReserve {
 			t.Error("requesting", tt.dates)
-			t.Error("want", tt.canBook)
-			t.Error("got ", !tt.canBook)
+			t.Error("want", tt.canReserve)
+			t.Error("got ", !tt.canReserve)
 			t.Error(c)
 		}
 	}
