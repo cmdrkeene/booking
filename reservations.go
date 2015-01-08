@@ -109,6 +109,18 @@ func (c calendar) Reserve(gid guestId, dr dateRange, rc rateCode) error {
 }
 
 func (c calendar) newReservation(g guestId, dr dateRange, rc rateCode) reservationId {
+	res := reservation{
+		Id:      c.newReservationId(),
+		Created: time.Now(),
+		Dates:   dr,
+		GuestId: g,
+		Rate:    rc,
+	}
+	c.reservations = append(c.reservations, res)
+	return res.Id
+}
+
+func (c calendar) newReservationId() reservationId {
 	id := atomic.AddUint32(&c.reservationPrimaryKey, 1)
 	return reservationId(id)
 }
