@@ -10,7 +10,7 @@ func TestGuestbookFind(t *testing.T) {
 	}
 
 	// not found
-	_, err = gb.Find(guestId("999"))
+	_, err = gb.Find(guestId(999))
 	if err != notFound {
 		t.Error("want", notFound)
 		t.Error("got s", err)
@@ -52,8 +52,8 @@ func TestGuestbookRegister(t *testing.T) {
 		if err != nil {
 			continue
 		}
-		if len(guestId) <= 0 {
-			t.Error("want non zero length guestId")
+		if guestId == 0 {
+			t.Error("want non zero guestId")
 			t.Error("got", guestId)
 		}
 	}

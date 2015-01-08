@@ -6,7 +6,7 @@ import (
 )
 
 func TestCalendar(t *testing.T) {
-	var gId = guestId("999")
+	var gId = guestId(999)
 	var feb1 = time.Date(2015, 2, 1, 0, 0, 0, 0, time.UTC)
 	var mar1 = time.Date(2015, 3, 1, 0, 0, 0, 0, time.UTC)
 

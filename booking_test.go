@@ -94,7 +94,7 @@ func (t testRegistrar) Register(name, email string) (guestId, error) {
 	if t.err == nil {
 		return t.guestId, nil
 	}
-	return "", t.err
+	return 0, t.err
 }
 
 type testReserver struct{ err error }

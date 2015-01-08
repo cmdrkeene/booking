@@ -14,7 +14,7 @@ type guestFinder interface {
 	Find(guestId) (guest, error)
 }
 
-type guestId string
+type guestId uint32
 
 type guest struct {
 	Email string
@@ -45,25 +45,25 @@ const minNameLength = 2
 
 func (g guestbook) Register(name, email string) (guestId, error) {
 	if name == "" {
-		return "", nameMissing
+		return 0, nameMissing
 	}
 
 	if email == "" {
-		return "", emailMissing
+		return 0, emailMissing
 	}
 
 	// use a crap check here and invalidate on failure to send
 	if !strings.Contains(email, "@") {
-		return "", emailInvalid
+		return 0, emailInvalid
 	}
 
 	// check if email exists
 	_, err := g.findByEmail(email)
 	if err == nil {
-		return "", emailExists
+		return 0, emailExists
 	}
 	if err != notFound {
-		return "", err
+		return 0, err
 	}
 
 	// add guest to database
