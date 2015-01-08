@@ -2,9 +2,8 @@ package booking
 
 import "time"
 
-// Manages payments and accounting
-type Billing interface {
-	Charge(guestId, creditCard, amount) error
+type charger interface {
+	Charge(creditCard, amount) error
 }
 
 type creditCard struct {
@@ -22,7 +21,7 @@ type paymentToken struct {
 	token string
 }
 
-func (pt paymentToken) Charge(amount) error {
+func (pt paymentToken) Capture(amount) error {
 	return nil
 }
 
@@ -42,3 +41,21 @@ type ledger map[guestId][]entry
 
 func (l ledger) Credit(guestId, amount) error { return nil }
 func (l ledger) Debit(guestId, amount) error  { return nil }
+
+type rateCode int
+
+const (
+	rateWithBunny rateCode = iota
+	rateWithoutBunny
+)
+
+func (c rateCode) Amount() amount {
+	switch c {
+	case rateWithoutBunny:
+		return amount{25000}
+	case rateWithBunny:
+		return amount{10000}
+	default:
+		panic("unknown rate code")
+	}
+}

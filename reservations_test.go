@@ -14,7 +14,7 @@ func TestCalendar(t *testing.T) {
 		c := newCalendar()
 		c.SetAvailable(newDateRange(feb1, 2))
 		c.SetAvailable(newDateRange(mar1, 2))
-		c.Reserve(gId, newDateRange(mar1, 2), rateWithBunny)
+		c.Reserve(newDateRange(mar1, 2), rateWithBunny, gId)
 		return c
 	}
 
@@ -33,7 +33,7 @@ func TestCalendar(t *testing.T) {
 
 	for _, tt := range tests {
 		cal := newTestCalendar()
-		if err := cal.Reserve(gId, tt.dates, rateWithBunny); err != tt.err {
+		if err := cal.Reserve(tt.dates, rateWithBunny, gId); err != tt.err {
 			t.Error("requesting", tt.dates)
 			t.Error("want", tt.err)
 			t.Error("got ", err)

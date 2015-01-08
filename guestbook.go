@@ -6,9 +6,11 @@ import (
 	"sync/atomic"
 )
 
-// Manages guest records
-type Guestbook interface {
+type registrar interface {
 	Register(name, email string) (guestId, error)
+}
+
+type guestFinder interface {
 	Find(guestId) (guest, error)
 }
 

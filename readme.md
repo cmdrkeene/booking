@@ -36,3 +36,22 @@ Billing - manages bookeeping, credit cards
 \_Ledger - credits and debits for a guest's account
 \_Processor - entity that manages credit cards
 \_PaymentToken - persisted credit card proxy
+
+## Flow
+
+    register
+    - send email to guest
+    reserve
+    - mark dateRange as reserved
+    - send email to manager
+    pay
+    - convert card to payment token
+    - save payment token in guestbook
+    - show cost before capture
+    - perform capture
+    - credit ledger with cost
+    - debit cost from ledger
+    confirm
+    - mark dateRange as booked
+    - send email to guest
+    - send email to manager

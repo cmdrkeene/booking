@@ -7,9 +7,9 @@ import (
 	"time"
 )
 
-// Reserves dates for a guest for a price
-type Reserver interface {
-	Reserve(guestId, dateRange, rateCode) error
+type reserver interface {
+	IsAvailable(dateRange, rateCode) bool
+	Reserve(dateRange, rateCode, guestId) error
 }
 
 type reservationId string
@@ -68,22 +68,26 @@ func (c calendar) SetAvailable(r dateRange) {
 
 var unavailable = errors.New("dates unavailable")
 
-func (c calendar) Reserve(gid guestId, dr dateRange, rc rateCode) error {
+func (c calendar) IsAvailable(dr dateRange, rc rateCode) bool {
 	// are all days available?
 	for _, t := range dr.EachDay() {
 		event, ok := c.events[t]
 		if !ok {
-			return unavailable
+			return false
 		}
 		if !event.Available() {
-			return unavailable
+			return false
 		}
 	}
+	return true
+}
 
-	// new reservation
+func (c calendar) Reserve(dr dateRange, rc rateCode, gid guestId) error {
+	if !c.IsAvailable(dr, rc) {
+		return unavailable
+	}
+
 	id := c.newReservation(gid, dr, rc)
-
-	// mark on calendar
 	for _, t := range dr.EachDay() {
 		c.events[t] = event{reservationId: id}
 	}
@@ -135,22 +139,4 @@ func (r dateRange) String() string {
 	t1 := r.start.Format(dayFormat)
 	t2 := r.start.Add(time.Duration(r.days) * day).Format(dayFormat)
 	return t1 + " to " + t2
-}
-
-type rateCode int
-
-const (
-	rateWithBunny rateCode = iota
-	rateWithoutBunny
-)
-
-func rateAmount(c rateCode) amount {
-	switch c {
-	case rateWithoutBunny:
-		return amount{25000}
-	case rateWithBunny:
-		return amount{10000}
-	default:
-		panic("unknown rate code")
-	}
 }
