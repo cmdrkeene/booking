@@ -1,18 +1,19 @@
 package booking
 
 import (
+	"errors"
 	"strings"
+	"sync/atomic"
 	"time"
 )
 
-// Manages room inventory for dates
-type Reservations interface {
+// Reserves dates for a guest for a price
+type Reserver interface {
 	Reserve(guestId, dateRange, rateCode) error
 }
 
 type reservationId string
 
-// Record of someone reserving dates for a fee
 type reservation struct {
 	Id      reservationId
 	Created time.Time
@@ -39,10 +40,7 @@ func rateAmount(c rateCode) amount {
 	}
 }
 
-// sparse map of available or booked dates
-type calendar map[time.Time]event
-
-// if event is on calendar, it is assumed to be available
+// if event exists and does not have a reservationId, it is "available"
 type event struct {
 	reservationId reservationId
 }
@@ -55,10 +53,22 @@ func (e event) Reserved() bool {
 	return len(e.reservationId) > 0
 }
 
+type calendar struct {
+	events                map[time.Time]event
+	reservations          []reservation
+	reservationPrimaryKey uint32
+}
+
+func newCalendar() calendar {
+	return calendar{
+		events: make(map[time.Time]event),
+	}
+}
+
 func (c calendar) String() string {
 	var lines []string
 	lines = append(lines, "\n== Calendar ==")
-	for t, event := range c {
+	for t, event := range c.events {
 		l := t.Format(dayFormat)
 		if event.Reserved() {
 			l = l + " (Reserved)"
@@ -69,53 +79,66 @@ func (c calendar) String() string {
 }
 
 func (c calendar) SetAvailable(r dateRange) {
-	for _, t := range r.Days() {
-		c[t] = event{}
+	for _, t := range r.EachDay() {
+		c.events[t] = event{}
 	}
 }
 
-func (c calendar) Reserve(dr dateRange, ri reservationId) bool {
-	// check if all available and not booked
-	for _, t := range dr.Days() {
-		event, ok := c[t]
+var unavailable = errors.New("dates unavailable")
+
+func (c calendar) Reserve(gid guestId, dr dateRange, rc rateCode) error {
+	// check if all days available
+	for _, t := range dr.EachDay() {
+		event, ok := c.events[t]
 		if !ok {
-			return false // not available
+			return unavailable
 		}
-		if event.Reserved() {
-			return false
+		if !event.Available() {
+			return unavailable
 		}
 	}
 
-	// mark it
-	for _, t := range dr.Days() {
-		c[t] = event{reservationId: ri}
+	// create reservation
+	id := c.newReservation(gid, dr, rc)
+
+	// mark on calendar
+	for _, t := range dr.EachDay() {
+		c.events[t] = event{reservationId: id}
 	}
-	return true
+	return nil
+}
+
+func (c calendar) newReservation(g guestId, dr dateRange, rc rateCode) reservationId {
+	id := atomic.AddUint32(&c.reservationPrimaryKey, 1)
+	return reservationId(id)
 }
 
 const day = 24 * time.Hour
 const dayFormat = "January 2, 2006"
 
 type dateRange struct {
-	NumDays int
-	Start   time.Time
+	days  int // number of days from start, must be > 0
+	start time.Time
 }
 
-func newDateRange(start time.Time, numDays int) dateRange {
-	return dateRange{Start: start, NumDays: numDays}
+func newDateRange(t time.Time, days int) dateRange {
+	if days == 0 {
+		panic("minimum days is 1")
+	}
+	return dateRange{start: t, days: days}
 }
 
-func (r dateRange) Days() []time.Time {
+func (r dateRange) EachDay() []time.Time {
 	var days []time.Time
-	for i := 0; i < r.NumDays; i++ {
+	for i := 0; i < r.days; i++ {
 		delta := time.Duration(i) * day
-		days = append(days, r.Start.Add(delta))
+		days = append(days, r.start.Add(delta))
 	}
 	return days
 }
 
 func (r dateRange) String() string {
-	t1 := r.Start.Format(dayFormat)
-	t2 := r.Start.Add(time.Duration(r.NumDays) * day).Format(dayFormat)
+	t1 := r.start.Format(dayFormat)
+	t2 := r.start.Add(time.Duration(r.days) * day).Format(dayFormat)
 	return t1 + " to " + t2
 }

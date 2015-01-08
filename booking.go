@@ -35,7 +35,7 @@ func newBooking(g guestId) *booking {
 	return w
 }
 
-func (b *booking) Schedule(dates dateRange, reservations Reservations) error {
+func (b *booking) Schedule(dates dateRange, r Reserver) error {
 	if b.state != bookingScheduling {
 		return bookingStateError
 	}

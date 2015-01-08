@@ -11,11 +11,11 @@ Pages:
 * Confirmed - after credit card charged, confirm reservation
 */
 type guestApp struct {
-	billing      Billing
-	guestbook    Guestbook
-	reservations Reservations
+	billing   Billing
+	guestbook Guestbook
+	reserver  Reserver
 }
 
-func newGuestApp(b Billing, g Guestbook, r Reservations) guestApp {
+func newGuestApp(b Billing, g Guestbook, r Reserver) guestApp {
 	return guestApp{}
 }
