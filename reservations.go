@@ -22,24 +22,6 @@ type reservation struct {
 	Rate    rateCode
 }
 
-type rateCode int
-
-const (
-	rateWithBunny rateCode = iota
-	rateWithoutBunny
-)
-
-func rateAmount(c rateCode) amount {
-	switch c {
-	case rateWithoutBunny:
-		return amount{25000}
-	case rateWithBunny:
-		return amount{10000}
-	default:
-		panic("unknown rate code")
-	}
-}
-
 // if event exists and does not have a reservationId, it is "available"
 type event struct {
 	reservationId reservationId
@@ -87,7 +69,7 @@ func (c calendar) SetAvailable(r dateRange) {
 var unavailable = errors.New("dates unavailable")
 
 func (c calendar) Reserve(gid guestId, dr dateRange, rc rateCode) error {
-	// check if all days available
+	// are all days available?
 	for _, t := range dr.EachDay() {
 		event, ok := c.events[t]
 		if !ok {
@@ -98,7 +80,7 @@ func (c calendar) Reserve(gid guestId, dr dateRange, rc rateCode) error {
 		}
 	}
 
-	// create reservation
+	// new reservation
 	id := c.newReservation(gid, dr, rc)
 
 	// mark on calendar
@@ -153,4 +135,22 @@ func (r dateRange) String() string {
 	t1 := r.start.Format(dayFormat)
 	t2 := r.start.Add(time.Duration(r.days) * day).Format(dayFormat)
 	return t1 + " to " + t2
+}
+
+type rateCode int
+
+const (
+	rateWithBunny rateCode = iota
+	rateWithoutBunny
+)
+
+func rateAmount(c rateCode) amount {
+	switch c {
+	case rateWithoutBunny:
+		return amount{25000}
+	case rateWithBunny:
+		return amount{10000}
+	default:
+		panic("unknown rate code")
+	}
 }
