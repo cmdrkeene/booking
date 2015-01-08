@@ -12,7 +12,7 @@ type reserver interface {
 	Reserve(dateRange, rateCode, guestId) error
 }
 
-type reservationId string
+type reservationId uint32
 
 type reservation struct {
 	Id      reservationId
@@ -32,7 +32,7 @@ func (e event) Available() bool {
 }
 
 func (e event) Reserved() bool {
-	return len(e.reservationId) > 0
+	return e.reservationId > 0
 }
 
 type calendar struct {

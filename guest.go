@@ -6,20 +6,20 @@ import (
 	"sync/atomic"
 )
 
-type registrar interface {
-	Register(name, email string) (guestId, error)
-}
-
-type guestFinder interface {
-	Find(guestId) (guest, error)
-}
-
 type guestId uint32
 
 type guest struct {
 	Email string
 	Id    guestId
 	Name  string
+}
+
+type registrar interface {
+	Register(name, email string) (guestId, error)
+}
+
+type guestFinder interface {
+	Find(guestId) (guest, error)
 }
 
 var (
