@@ -78,7 +78,13 @@ func (b *booking) Schedule(dates dateRange, rate rateCode, res reserver) error {
 	b.rate = rate
 	b.state = bookingRegistering
 
-	return b.store.Save(b)
+	err := b.store.Save(b)
+	if err != nil {
+		return err
+	}
+
+	log.Print(b.id, "scheduled")
+	return nil
 }
 
 func (b *booking) Register(name, email string, reg registrar) error {
@@ -93,7 +99,13 @@ func (b *booking) Register(name, email string, reg registrar) error {
 
 	b.guestId = guestId
 	b.state = bookingPaying
-	return b.store.Save(b)
+
+	err = b.store.Save(b)
+	if err != nil {
+		return err
+	}
+	log.Print(b.id, "registered")
+	return nil
 }
 
 func (b *booking) Pay(card creditCard, chg charger) error {
@@ -108,7 +120,12 @@ func (b *booking) Pay(card creditCard, chg charger) error {
 	}
 
 	b.state = bookingReserving
-	return b.store.Save(b)
+	err = b.store.Save(b)
+	if err != nil {
+		return err
+	}
+	log.Print(b.id, "paid")
+	return nil
 }
 
 func (b *booking) Reserve(res reserver) error {
@@ -122,7 +139,13 @@ func (b *booking) Reserve(res reserver) error {
 	}
 
 	b.state = bookingComplete
-	return b.store.Save(b)
+	err = b.store.Save(b)
+	if err != nil {
+		return err
+	}
+
+	log.Print(b.id, "complete")
+	return nil
 }
 
 type bookingState int
