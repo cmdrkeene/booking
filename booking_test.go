@@ -6,10 +6,13 @@ import (
 )
 
 func TestBookingStateMachine(t *testing.T) {
-	store := newBookingMemoryStore()
-
 	// create a booking
-	booking, err := newBooking(store)
+	booking, err := newBooking(
+		testCharger{err: nil},
+		testRegistrar{err: nil, guestId: guestId(999)},
+		testReserver{err: nil},
+		newBookingMemoryStore(),
+	)
 	if err != nil {
 		t.Error(err)
 	}
@@ -23,7 +26,6 @@ func TestBookingStateMachine(t *testing.T) {
 	err = booking.Schedule(
 		dates,
 		rateWithBunny,
-		testReserver{err: nil},
 	)
 	if err != nil {
 		t.Error(err)
@@ -37,7 +39,6 @@ func TestBookingStateMachine(t *testing.T) {
 	err = booking.Register(
 		"Brandon",
 		"brandon@example.com",
-		testRegistrar{err: nil, guestId: guestId(999)},
 	)
 	if err != nil {
 		t.Error(err)
@@ -48,7 +49,7 @@ func TestBookingStateMachine(t *testing.T) {
 	}
 
 	// Pay
-	err = booking.Pay(creditCard{}, testCharger{})
+	err = booking.Pay(creditCard{})
 	if err != nil {
 		t.Error(err)
 	}
@@ -58,7 +59,7 @@ func TestBookingStateMachine(t *testing.T) {
 	}
 
 	// Reserve
-	err = booking.Reserve(testReserver{})
+	err = booking.Reserve()
 	if err != nil {
 		t.Error(err)
 	}

@@ -22,7 +22,12 @@ type booking struct {
 	id      bookingId
 	rate    rateCode
 	state   bookingState
-	store   bookingStore
+
+	// dependencies
+	charger   charger
+	registrar registrar
+	reserver  reserver
+	store     bookingStore
 }
 
 type bookingStore interface {
@@ -51,26 +56,38 @@ func (s *bookingMemoryStore) Save(b *booking) error {
 	return nil
 }
 
-func newBooking(store bookingStore) (*booking, error) {
+func newBooking(
+	charger charger,
+	registrar registrar,
+	reserver reserver,
+	store bookingStore,
+) (*booking, error) {
+	// workflow
 	b := &booking{}
 	b.created = time.Now()
 	b.id = store.NewId()
 	b.state = bookingScheduling
+
+	// dependencies
+	b.charger = charger
+	b.registrar = registrar
+	b.reserver = reserver
 	b.store = store
+
 	err := store.Save(b)
 	if err != nil {
 		return nil, err
 	}
-	log.Print(b.id, "initialized")
+	log.Print(b.id, "created")
 	return b, nil
 }
 
-func (b *booking) Schedule(dates dateRange, rate rateCode, res reserver) error {
+func (b *booking) Schedule(dates dateRange, rate rateCode) error {
 	if b.state != bookingScheduling {
 		return bookingStateError
 	}
 
-	if !res.IsAvailable(dates, rate) {
+	if !b.reserver.IsAvailable(dates, rate) {
 		return unavailable
 	}
 
@@ -87,12 +104,12 @@ func (b *booking) Schedule(dates dateRange, rate rateCode, res reserver) error {
 	return nil
 }
 
-func (b *booking) Register(name, email string, reg registrar) error {
+func (b *booking) Register(name, email string) error {
 	if b.state != bookingRegistering {
 		return bookingStateError
 	}
 
-	guestId, err := reg.Register(name, email)
+	guestId, err := b.registrar.Register(name, email)
 	if err != nil {
 		return err
 	}
@@ -108,13 +125,13 @@ func (b *booking) Register(name, email string, reg registrar) error {
 	return nil
 }
 
-func (b *booking) Pay(card creditCard, chg charger) error {
+func (b *booking) Pay(card creditCard) error {
 	if b.state != bookingPaying {
 		return bookingStateError
 	}
 
 	amount := b.rate.Amount()
-	err := chg.Charge(card, amount)
+	err := b.charger.Charge(card, amount)
 	if err != nil {
 		return err
 	}
@@ -128,12 +145,12 @@ func (b *booking) Pay(card creditCard, chg charger) error {
 	return nil
 }
 
-func (b *booking) Reserve(res reserver) error {
+func (b *booking) Reserve() error {
 	if b.state != bookingReserving {
 		return bookingStateError
 	}
 
-	err := res.Reserve(b.dates, b.rate, b.guestId)
+	err := b.reserver.Reserve(b.dates, b.rate, b.guestId)
 	if err != nil {
 		return err
 	}

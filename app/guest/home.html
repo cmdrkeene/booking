@@ -1,0 +1,22 @@
+<html>
+<head>
+  <title>Home | Booking</title>
+</head>
+<body>
+  <h1>Home</h1>
+  <p>Please come and enjoy our lovely home in New York City.</p>
+  <form action="{{.Action}}" method="post">
+    <table>
+      {{ range .Days }}
+        <tr>
+            <td><input type="checkbox" /></td>
+            <td>{{.}}</td>
+        </tr>
+      {{ end }}
+    </table>
+    <p>
+      <input type="submit" value="Book" />
+    </p>
+  </form>
+</body>
+</html>
