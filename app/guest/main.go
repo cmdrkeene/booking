@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"text/template"
+	"time"
 
 	"github.com/cmdrkeene/booking"
 )
@@ -88,6 +90,9 @@ func (a bookingApp) ListenAndServe(addr string) error {
 	return s.ListenAndServe()
 }
 
+var prettyDateFormat = "January 2, 2006"
+var shortDateFormat = "2006-01-02"
+
 func (a bookingApp) home(w http.ResponseWriter, r *http.Request) {
 	days, err := a.service.AvailableDays()
 	if err != nil {
@@ -95,29 +100,59 @@ func (a bookingApp) home(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dayStrings := make([]string, len(days))
-	for i, d := range days {
-		dayStrings[i] = d.Format("January 2, 2006")
-	}
-
 	var vars = struct {
-		Days   []string
+		Days   []time.Time
 		Action string
-	}{dayStrings, pathDates}
+	}{days, pathDates}
 	renderTemplate(w, templateHome, vars)
 }
 
-func (a bookingApp) dates(w http.ResponseWriter, r *http.Request)    {}
+func (a bookingApp) dates(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	for _, v := range r.Form["dates"] {
+		t, err := time.Parse(shortDateFormat, v)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		w.Write([]byte(t.Format(shortDateFormat) + "\n"))
+	}
+
+	return
+}
 func (a bookingApp) register(w http.ResponseWriter, r *http.Request) {}
 func (a bookingApp) pay(w http.ResponseWriter, r *http.Request)      {}
 func (a bookingApp) complete(w http.ResponseWriter, r *http.Request) {}
 
+func prettyDate(t time.Time) string {
+	return t.Format(prettyDateFormat)
+}
+
+func shortDate(t time.Time) string {
+	return t.Format(shortDateFormat)
+}
+
 func renderTemplate(w http.ResponseWriter, tmpl string, data interface{}) {
-	t, err := template.ParseFiles(tmpl + ".html")
+	funcs := template.FuncMap{
+		"prettyDate": prettyDate,
+		"shortDate":  shortDate,
+	}
+
+	parts := strings.Split(tmpl, "/")
+	name := parts[len(parts)-1] + ".html"
+	path := tmpl + ".html"
+
+	t, err := template.New(name).Funcs(funcs).ParseFiles(path)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
 	err = t.Execute(w, data)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

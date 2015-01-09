@@ -5,12 +5,19 @@
 <body>
   <h1>Home</h1>
   <p>Please come and enjoy our lovely home in New York City.</p>
+  <table border=1>
+    <tr>
+      <td>Dates</td>
+      <td>Register</td>
+      <td>Pay</td>
+    </tr>
+  </table>
   <form action="{{.Action}}" method="post">
     <table>
-      {{ range .Days }}
+      {{ range $i, $e := .Days }}
         <tr>
-            <td><input type="checkbox" /></td>
-            <td>{{.}}</td>
+            <td><input type="checkbox" name="dates" value="{{ shortDate $e }}" /></td>
+            <td>{{ prettyDate $e }}</td>
         </tr>
       {{ end }}
     </table>
