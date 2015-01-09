@@ -5,9 +5,14 @@ import (
 	"time"
 )
 
-// scheduling -> registering -> paying -> complete
 func TestBookingStateMachine(t *testing.T) {
-	booking := newBooking(guestId(123))
+	store := newBookingMemoryStore()
+
+	// create a booking
+	booking, err := newBooking(store)
+	if err != nil {
+		t.Error(err)
+	}
 	if booking.state != bookingScheduling {
 		t.Error("want", bookingScheduling)
 		t.Error("got ", booking.state)
@@ -15,7 +20,7 @@ func TestBookingStateMachine(t *testing.T) {
 
 	// Schedule
 	dates := newDateRange(time.Now(), 1)
-	err := booking.Schedule(
+	err = booking.Schedule(
 		dates,
 		rateWithBunny,
 		testReserver{err: nil},
@@ -62,7 +67,7 @@ func TestBookingStateMachine(t *testing.T) {
 		t.Error("got ", booking.state)
 	}
 
-	// Complete - check final booking data
+	// Complete
 	if booking.dates != dates {
 		t.Error("want", dates)
 		t.Error("got ", booking.dates)
