@@ -10,7 +10,12 @@ import (
 )
 
 func TestWebApp(t *testing.T) {
-	service := testService{}
+	service := testService{
+		availableDays: []time.Time{
+			time.Date(2015, 2, 1, 0, 0, 0, 0, time.UTC),
+			time.Date(2015, 2, 2, 0, 0, 0, 0, time.UTC),
+		},
+	}
 
 	app := newWebApp(service)
 	ts := httptest.NewServer(app)
@@ -81,10 +86,10 @@ func (c *testClient) Get(path string) error {
 	return nil
 }
 
-type testService struct{}
+type testService struct {
+	availableDays []time.Time
+}
 
 func (ts testService) AvailableDays() ([]time.Time, error) {
-	return []time.Time{
-		time.Date(2015, 2, 1, 0, 0, 0, 0, time.UTC),
-	}, nil
+	return ts.availableDays, nil
 }

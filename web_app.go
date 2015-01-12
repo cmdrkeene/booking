@@ -58,14 +58,15 @@ func (a webApp) Home(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	days, err := a.service.AvailableDays()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	var data = struct {
 		Days []time.Time
-	}{
-		[]time.Time{
-			time.Date(2015, 2, 1, 0, 0, 0, 0, time.UTC),
-			time.Date(2015, 2, 2, 0, 0, 0, 0, time.UTC),
-		},
-	}
+	}{days}
 	t.Execute(w, data)
 }
 
