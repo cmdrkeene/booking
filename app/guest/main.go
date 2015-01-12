@@ -39,6 +39,8 @@ Pages:
 * Pay - after dates picked, guest registered, charge credit card
 * Complete - after credit card charged, confirm reservation
 
+Store session information in a "session" cookie mapped to an in memory store.
+
 Dependencies:
 - way to show availability
 - way to create a booking
@@ -69,8 +71,8 @@ func newBookingApp(service booking.Service) bookingApp {
 	app.service = service
 
 	mux := http.NewServeMux()
-	mux.HandleFunc(pathHome, app.home)
-	mux.HandleFunc(pathDates, app.dates)
+	mux.HandleFunc(pathHome, app.Home)
+	mux.HandleFunc(pathDates, app.ChooseDates)
 	mux.HandleFunc(pathRegister, app.register)
 	mux.HandleFunc(pathPay, app.pay)
 	mux.HandleFunc(pathComplete, app.complete)
@@ -93,7 +95,7 @@ func (a bookingApp) ListenAndServe(addr string) error {
 var prettyDateFormat = "January 2, 2006"
 var shortDateFormat = "2006-01-02"
 
-func (a bookingApp) home(w http.ResponseWriter, r *http.Request) {
+func (a bookingApp) Home(w http.ResponseWriter, r *http.Request) {
 	days, err := a.service.AvailableDays()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -107,7 +109,12 @@ func (a bookingApp) home(w http.ResponseWriter, r *http.Request) {
 	renderTemplate(w, templateHome, vars)
 }
 
-func (a bookingApp) dates(w http.ResponseWriter, r *http.Request) {
+func (a bookingApp) ChooseDates(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		http.Error(w, "Not Implemented", http.StatusNotImplemented)
+		return
+	}
+
 	err := r.ParseForm()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)

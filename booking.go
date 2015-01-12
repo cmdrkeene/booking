@@ -11,7 +11,7 @@ import (
 type bookingId uint32
 
 func (id bookingId) String() string {
-	return fmt.Sprintf("booking:%d", id)
+	return fmt.Sprintf("booking:%d ", id)
 }
 
 // Workflow to orchestrate a guest paying for a reservation
