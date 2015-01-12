@@ -7,6 +7,8 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"code.google.com/p/go.net/html"
 )
 
 func TestWebApp(t *testing.T) {
@@ -44,6 +46,19 @@ func TestWebApp(t *testing.T) {
 		t.Error("got", string(client.body))
 	}
 
+	// find form
+	doc, err := html.Parse(bytes.NewReader(client.body))
+	if err != nil {
+		t.Error(err)
+	}
+
+	forms := getElements(doc, "form")
+	if len(forms) == 0 {
+		t.Error("want html form")
+		t.Error("got none")
+	}
+
+	// select no checkboxes
 	// select two checkboxes
 	// click Book
 	// see registration
@@ -92,4 +107,19 @@ type testService struct {
 
 func (ts testService) AvailableDays() ([]time.Time, error) {
 	return ts.availableDays, nil
+}
+
+func getElements(doc *html.Node, name string) []*html.Node {
+	var found []*html.Node
+	var f func(*html.Node)
+	f = func(n *html.Node) {
+		if n.Type == html.ElementNode && n.Data == name {
+			found = append(found, n)
+		}
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			f(c)
+		}
+	}
+	f(doc)
+	return found
 }

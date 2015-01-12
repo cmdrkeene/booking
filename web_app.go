@@ -15,11 +15,13 @@ type webApp struct {
 const templateHome = `
 <html>
 <body>
+<form action="/choose">
 <ul>
 {{range .Days}}
   <li>{{shortDate .}}</li>
 {{end}}
 </ul>
+</form>
 </body>
 </html>
 `
