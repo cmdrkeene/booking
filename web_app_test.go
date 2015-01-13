@@ -76,8 +76,39 @@ func TestWebAppBook(t *testing.T) {
 	ts := httptest.NewServer(app)
 	defer ts.Close()
 
-	// submit form
+	// submit incomplete form
 	form := bookingForm{}
+	url := ts.URL + pathBook + "?" + form.Encode()
+	req, err := http.NewRequest("POST", url, nil)
+	if err != nil {
+		t.Error(err)
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// check bad request
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Error("want", http.StatusTemporaryRedirect)
+		t.Error("got ", resp.StatusCode)
+	}
+
+	// check error message
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Error(err)
+	}
+	resp.Body.Close()
+
+	want := []byte("name missing")
+	if !bytes.Contains(body, want) {
+		t.Error("want contains", string(want))
+		t.Error("got", string(body))
+	}
+
+	// submit complete form
+	form = bookingForm{}
 	form.Name = "Brandon"
 	form.Email = "a@b.com"
 	form.Phone = "(555) 111-1212"
@@ -90,13 +121,12 @@ func TestWebAppBook(t *testing.T) {
 	form.CardYear = "2015"
 	form.CardCVC = "111"
 
-	// submit form
-	url := ts.URL + pathBook + "?" + form.Encode()
-	req, err := http.NewRequest("POST", url, nil)
+	url = ts.URL + pathBook + "?" + form.Encode()
+	req, err = http.NewRequest("POST", url, nil)
 	if err != nil {
 		t.Error(err)
 	}
-	resp, err := http.DefaultClient.Do(req)
+	resp, err = http.DefaultClient.Do(req)
 	if err != nil {
 		t.Error(err)
 	}
