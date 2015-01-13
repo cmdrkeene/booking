@@ -147,6 +147,10 @@ func (ts testService) AvailableDays() ([]time.Time, error) {
 	return ts.availableDays, nil
 }
 
+func (ts testService) Book(bookingForm) (bookingId, error) {
+	return 0, nil
+}
+
 func getElements(doc *html.Node, name string) []*html.Node {
 	var found []*html.Node
 	var f func(*html.Node)

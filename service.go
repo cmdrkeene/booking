@@ -4,6 +4,7 @@ import "time"
 
 type Service interface {
 	AvailableDays() ([]time.Time, error)
+	Book(bookingForm) (bookingId, error)
 }
 
 type service struct {
@@ -25,4 +26,8 @@ func (s service) AvailableDays() ([]time.Time, error) {
 		time.Date(2015, 2, 1, 0, 0, 0, 0, time.UTC),
 	}
 	return days, nil
+}
+
+func (s service) Book(bookingForm) (bookingId, error) {
+	return 0, nil
 }

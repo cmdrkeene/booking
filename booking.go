@@ -31,7 +31,6 @@ type booking struct {
 }
 
 type bookingStore interface {
-	NewId() bookingId
 	Save(*booking) error
 }
 
@@ -47,11 +46,14 @@ func newBookingMemoryStore() *bookingMemoryStore {
 	}
 }
 
-func (s *bookingMemoryStore) NewId() bookingId {
+func (s *bookingMemoryStore) newId() bookingId {
 	return bookingId(atomic.AddUint32(&s.lastId, 1))
 }
 
 func (s *bookingMemoryStore) Save(b *booking) error {
+	if b.id == 0 {
+		b.id = s.newId()
+	}
 	s.records[b.id] = b
 	return nil
 }
@@ -65,7 +67,6 @@ func newBooking(
 	// workflow
 	b := &booking{}
 	b.created = time.Now()
-	b.id = store.NewId()
 	b.state = bookingScheduling
 
 	// dependencies
