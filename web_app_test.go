@@ -11,15 +11,13 @@ import (
 	"code.google.com/p/go.net/html"
 )
 
-func TestWebApp(t *testing.T) {
-	service := testService{
+func TestWebAppHome(t *testing.T) {
+	app := NewWebApp(testService{
 		availableDays: []time.Time{
 			time.Date(2015, 2, 1, 0, 0, 0, 0, time.UTC),
 			time.Date(2015, 2, 2, 0, 0, 0, 0, time.UTC),
 		},
-	}
-
-	app := NewWebApp(service)
+	})
 	ts := httptest.NewServer(app)
 	defer ts.Close()
 
@@ -66,8 +64,19 @@ func TestWebApp(t *testing.T) {
 		t.Error("want html form")
 		t.Error("got none")
 	}
+}
 
-	// fill in form
+func TestWebAppBook(t *testing.T) {
+	app := NewWebApp(testService{
+		availableDays: []time.Time{
+			time.Date(2015, 2, 1, 0, 0, 0, 0, time.UTC),
+			time.Date(2015, 2, 2, 0, 0, 0, 0, time.UTC),
+		},
+	})
+	ts := httptest.NewServer(app)
+	defer ts.Close()
+
+	// submit form
 	form := bookingForm{}
 	form.Name = "Brandon"
 	form.Email = "a@b.com"
@@ -83,11 +92,11 @@ func TestWebApp(t *testing.T) {
 
 	// submit form
 	url := ts.URL + pathBook + "?" + form.Encode()
-	req, err = http.NewRequest("POST", url, nil)
+	req, err := http.NewRequest("POST", url, nil)
 	if err != nil {
 		t.Error(err)
 	}
-	resp, err = http.DefaultClient.Do(req)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Error(err)
 	}
