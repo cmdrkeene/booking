@@ -19,8 +19,6 @@ type bookingForm struct {
 	CardCVC    string
 }
 
-const iso8601Date = "2006-01-02"
-
 func newBookingForm(r *http.Request) (bookingForm, error) {
 	f := bookingForm{}
 	f.Name = r.FormValue("name")
@@ -28,7 +26,7 @@ func newBookingForm(r *http.Request) (bookingForm, error) {
 	f.Phone = r.FormValue("phone")
 	f.Phone = r.FormValue("phone")
 	for _, v := range r.Form["dates"] {
-		t, err := time.Parse(iso8601Date, v)
+		t, err := time.Parse(iso8601, v)
 		if err != nil {
 			return bookingForm{}, datesInvalid
 		}

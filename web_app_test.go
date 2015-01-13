@@ -19,7 +19,7 @@ func TestWebApp(t *testing.T) {
 		},
 	}
 
-	app := newWebApp(service)
+	app := NewWebApp(service)
 	ts := httptest.NewServer(app)
 	defer ts.Close()
 
