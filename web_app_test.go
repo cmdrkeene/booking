@@ -23,72 +23,81 @@ func TestWebApp(t *testing.T) {
 	ts := httptest.NewServer(app)
 	defer ts.Close()
 
-	// new test client
-	client := newTestClient(ts.URL)
-
 	// get homepage
-	client.Get("/")
-	if client.code != http.StatusOK {
-		t.Error("want", http.StatusOK)
-		t.Error("got ", client.code)
-	}
-
-	// ensure dates are listed
-	want := []byte("February 1, 2015")
-	if !bytes.Contains(client.body, want) {
-		t.Error("want contains", string(want))
-		t.Error("got", string(client.body))
-	}
-
-	want = []byte("February 2, 2015")
-	if !bytes.Contains(client.body, want) {
-		t.Error("want contains", string(want))
-		t.Error("got", string(client.body))
-	}
-
-	// find form
-	doc, err := html.Parse(bytes.NewReader(client.body))
+	req, err := http.NewRequest("GET", ts.URL+pathHome, nil)
 	if err != nil {
 		t.Error(err)
 	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Error(err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Error("want", http.StatusOK)
+		t.Error("got ", resp.StatusCode)
+	}
 
+	// ensure dates are listed
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Error(err)
+	}
+	resp.Body.Close()
+
+	want := []byte("February 1, 2015")
+	if !bytes.Contains(body, want) {
+		t.Error("want contains", string(want))
+		t.Error("got", string(body))
+	}
+
+	want = []byte("February 2, 2015")
+	if !bytes.Contains(body, want) {
+		t.Error("want contains", string(want))
+		t.Error("got", string(body))
+	}
+
+	// TODO ensure form is correct
+	doc, err := html.Parse(bytes.NewReader(body))
+	if err != nil {
+		t.Error(err)
+	}
 	forms := getElements(doc, "form")
 	if len(forms) == 0 {
 		t.Error("want html form")
 		t.Error("got none")
 	}
 
+	// fill in form
+	form := bookingForm{}
+	form.Name = "Brandon"
+	form.Email = "a@b.com"
+	form.Phone = "(555) 111-1212"
+	form.Dates = []time.Time{
+		time.Date(2015, 2, 1, 0, 0, 0, 0, time.UTC),
+		time.Date(2015, 2, 2, 0, 0, 0, 0, time.UTC),
+	}
+	form.CardNumber = "1111222233334444"
+	form.CardMonth = "1"
+	form.CardYear = "2015"
+	form.CardCVC = "111"
+
 	// submit form
-	// success
-}
-
-type testClient struct {
-	url  string
-	body []byte
-	code int
-}
-
-func newTestClient(url string) *testClient {
-	c := &testClient{}
-	c.url = url
-	return c
-}
-
-func (c *testClient) Get(path string) error {
-	resp, err := http.Get(c.url + path)
+	url := ts.URL + pathBook + "?" + form.Encode()
+	req, err = http.NewRequest("POST", url, nil)
 	if err != nil {
-		c.body = nil
-		c.code = 0
-		return err
+		t.Error(err)
 	}
-	c.body, err = ioutil.ReadAll(resp.Body)
-	defer resp.Body.Close()
+	resp, err = http.DefaultClient.Do(req)
 	if err != nil {
-		return err
+		t.Error(err)
 	}
-	c.code = resp.StatusCode
+	resp.Body.Close()
 
-	return nil
+	// check created
+	if resp.StatusCode != http.StatusCreated {
+		t.Error("want", http.StatusCreated)
+		t.Error("got ", resp.StatusCode)
+	}
 }
 
 type testService struct {

@@ -149,5 +149,5 @@ func (a webApp) Book(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Write([]byte("SUCCESS!"))
+	w.WriteHeader(http.StatusCreated)
 }

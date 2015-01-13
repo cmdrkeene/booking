@@ -3,6 +3,7 @@ package booking
 import (
 	"errors"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -38,6 +39,21 @@ func newBookingForm(r *http.Request) (bookingForm, error) {
 	f.CardCVC = r.FormValue("card_cvc")
 
 	return f, nil
+}
+
+func (f bookingForm) Encode() string {
+	v := &url.Values{}
+	v.Set("name", f.Name)
+	v.Set("email", f.Email)
+	v.Set("phone", f.Phone)
+	for _, t := range f.Dates {
+		v.Add("dates", t.Format(iso8601))
+	}
+	v.Set("card_number", f.CardNumber)
+	v.Set("card_month", f.CardMonth)
+	v.Set("card_year", f.CardYear)
+	v.Set("card_cvc", f.CardCVC)
+	return v.Encode()
 }
 
 func (f bookingForm) Validate() error {
