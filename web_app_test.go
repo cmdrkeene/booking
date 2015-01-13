@@ -28,9 +28,9 @@ func TestWebApp(t *testing.T) {
 
 	// get homepage
 	client.Get("/")
-	if code := client.response.StatusCode; code != http.StatusOK {
+	if client.code != http.StatusOK {
 		t.Error("want", http.StatusOK)
-		t.Error("got ", code)
+		t.Error("got ", client.code)
 	}
 
 	// ensure dates are listed
@@ -58,19 +58,14 @@ func TestWebApp(t *testing.T) {
 		t.Error("got none")
 	}
 
-	// select no checkboxes
-	// select two checkboxes
-	// click Book
-	// see registration
+	// submit form
+	// success
 }
 
 type testClient struct {
-	url      string
-	cookies  *http.CookieJar
-	visited  []string       // list of visited urls. head is first, tail is last.
-	response *http.Response // last response
-	body     []byte
-	code     int
+	url  string
+	body []byte
+	code int
 }
 
 func newTestClient(url string) *testClient {
@@ -79,24 +74,19 @@ func newTestClient(url string) *testClient {
 	return c
 }
 
-func (c *testClient) Response() *http.Response {
-	return c.response
-}
-
 func (c *testClient) Get(path string) error {
-	var err error
-	c.response, err = http.Get(c.url + path)
+	resp, err := http.Get(c.url + path)
 	if err != nil {
 		c.body = nil
 		c.code = 0
 		return err
 	}
-	c.body, err = ioutil.ReadAll(c.response.Body)
-	defer c.response.Body.Close()
+	c.body, err = ioutil.ReadAll(resp.Body)
+	defer resp.Body.Close()
 	if err != nil {
 		return err
 	}
-	c.code = c.response.StatusCode
+	c.code = resp.StatusCode
 
 	return nil
 }
