@@ -22,6 +22,34 @@ type reservation struct {
 	Rate    rateCode
 }
 
+type reservationStore interface {
+	Save(*reservation) error
+}
+
+type reservationMemoryStore struct {
+	lastId  uint32
+	records map[reservationId]*reservation
+}
+
+func newReservationMemoryStore() *reservationMemoryStore {
+	return &reservationMemoryStore{
+		lastId:  0,
+		records: make(map[reservationId]*reservation),
+	}
+}
+
+func (s *reservationMemoryStore) newId() reservationId {
+	return reservationId(atomic.AddUint32(&s.lastId, 1))
+}
+
+func (s *reservationMemoryStore) Save(record *reservation) error {
+	if record.Id == 0 {
+		record.Id = s.newId()
+	}
+	s.records[record.Id] = record
+	return nil
+}
+
 // if event exists and does not have a reservationId, it is "available"
 type event struct {
 	reservationId reservationId

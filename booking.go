@@ -50,11 +50,11 @@ func (s *bookingMemoryStore) newId() bookingId {
 	return bookingId(atomic.AddUint32(&s.lastId, 1))
 }
 
-func (s *bookingMemoryStore) Save(b *booking) error {
-	if b.id == 0 {
-		b.id = s.newId()
+func (s *bookingMemoryStore) Save(record *booking) error {
+	if record.id == 0 {
+		record.id = s.newId()
 	}
-	s.records[b.id] = b
+	s.records[record.id] = record
 	return nil
 }
 
