@@ -19,20 +19,21 @@ type availabilityTable struct {
 }
 
 func newAvailabilityTable(db *sql.DB) availabilityTable {
+	db.Exec(`
+    CREATE TABLE availability (
+      Date date not null
+    );
+  `)
+
 	t := availabilityTable{}
 	var err error
 
-	t.create, err = db.Prepare("CREATE TABLE availability (date DATE)")
+	t.add, err = db.Prepare("INSERT INTO Availability (Date) VALUES ($1)")
 	if err != nil {
 		panic(err)
 	}
 
-	t.add, err = db.Prepare("INSERT INTO availability (date) VALUES ($1)")
-	if err != nil {
-		panic(err)
-	}
-
-	t.remove, err = db.Prepare("DELETE FROM availability WHERE date=$1")
+	t.remove, err = db.Prepare("DELETE FROM Availability WHERE Date=$1")
 	if err != nil {
 		panic(err)
 	}
@@ -43,13 +44,6 @@ func newAvailabilityTable(db *sql.DB) availabilityTable {
 	}
 
 	return t
-}
-
-func (table availabilityTable) Create() {
-	_, err := table.create.Exec()
-	if err != nil {
-		panic(err)
-	}
 }
 
 func (table availabilityTable) Add(t time.Time) error {
