@@ -20,8 +20,8 @@ type availabilityTable struct {
 
 func newAvailabilityTable(db *sql.DB) availabilityTable {
 	db.Exec(`
-    CREATE TABLE availability (
-      Date date not null
+    CREATE TABLE Availability (
+      Date DATETIME NOT NULL
     );
   `)
 
@@ -38,7 +38,7 @@ func newAvailabilityTable(db *sql.DB) availabilityTable {
 		panic(err)
 	}
 
-	t.list, err = db.Prepare("SELECT date FROM availability")
+	t.list, err = db.Prepare("SELECT Date FROM Availability ORDER BY Date ASC")
 	if err != nil {
 		panic(err)
 	}
