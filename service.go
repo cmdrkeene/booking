@@ -17,7 +17,6 @@ func NewService(dataPath, processorToken string) service {
 	s := service{}
 	s.dataPath = dataPath
 	s.processorToken = processorToken
-	s.reserver = newCalendar()
 	return s
 }
 

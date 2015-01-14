@@ -15,13 +15,23 @@ func TestReservationManager(t *testing.T) {
 	manager := newReservationManager(available, store)
 
 	// not available
-	notAvailable := newDateRange(time.Date(2015, 3, 1, 0, 0, 0, 0, time.UTC), 1)
-	err := manager.Reserve(notAvailable, rateWithBunny, guest)
+	err := manager.Reserve(newDateRange(feb1, 7), rateWithBunny, guest)
 	if err != unavailable {
 		t.Error("want", unavailable)
 		t.Error("got ", err)
 	}
 
 	// reserve
+	err = manager.Reserve(newDateRange(feb1, 2), rateWithBunny, guest)
+	if err != nil {
+		t.Error("want nil")
+		t.Error("got  ", err)
+	}
+
 	// already reserved
+	err = manager.Reserve(newDateRange(feb1, 2), rateWithBunny, guest)
+	if err != unavailable {
+		t.Error("want", unavailable)
+		t.Error("got ", err)
+	}
 }

@@ -18,6 +18,20 @@ func newDateRange(t time.Time, days int) dateRange {
 	return dateRange{start: t, days: days}
 }
 
+// return true if all times in range present in list
+func (r dateRange) Coincident(list []time.Time) bool {
+	set := make(map[time.Time]interface{})
+	for _, t := range list {
+		set[t] = struct{}{}
+	}
+	for _, t := range r.EachDay() {
+		if _, ok := set[t]; !ok {
+			return false
+		}
+	}
+	return true
+}
+
 func (r dateRange) EachDay() []time.Time {
 	var days []time.Time
 	for i := 0; i < r.days; i++ {

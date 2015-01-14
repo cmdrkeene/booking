@@ -2,10 +2,12 @@ package booking
 
 import (
 	"errors"
-	"strings"
+	"log"
 	"sync/atomic"
 	"time"
 )
+
+var unavailable = errors.New("unavailable")
 
 type reservationId uint32
 
@@ -29,41 +31,62 @@ type reserver interface {
 }
 
 type reservationManager struct {
-	available []time.Time
-	store     reservationStore
+	available    []time.Time
+	availability map[time.Time]interface{}
+	store        reservationStore
 }
 
 func newReservationManager(available []time.Time, store reservationStore) reservationManager {
-	return reservationManager{
-		available: available,
-		store:     store,
+	m := reservationManager{
+		available:    available,
+		availability: make(map[time.Time]interface{}),
+		store:        store,
 	}
+	for _, t := range available {
+		m.availability[t] = struct{}{}
+	}
+	return m
 }
 
 func (m reservationManager) Reserve(dr dateRange, rc rateCode, id guestId) error {
-	if !m.isAvailable(dr) {
+	// check available
+	if !dr.Coincident(m.available) {
 		return unavailable
+	}
+
+	// check reserved
+	reserved, err := m.reserved()
+	log.Print("reserved", reserved)
+	if err != nil {
+		return err
+	}
+	if dr.Coincident(reserved) {
+		return unavailable
+	}
+
+	// save
+	record := &reservation{Dates: dr, GuestId: id, Rate: rc}
+	err = m.store.Save(record)
+	if err != nil {
+		return err
 	}
 
 	return nil
 }
 
-func (m reservationManager) isAvailable(dr dateRange) bool {
-	var include = func(test time.Time) bool {
-		for _, item := range m.available {
-			if item == test {
-				return true
-			}
-		}
-		return false
+func (m reservationManager) reserved() ([]time.Time, error) {
+	records, err := m.store.List()
+	if err != nil {
+		return []time.Time{}, err
 	}
 
-	for _, d := range dr.EachDay() {
-		if !include(d) {
-			return false
+	var times []time.Time
+	for _, r := range records {
+		for _, t := range r.Dates.EachDay() {
+			times = append(times, t)
 		}
 	}
-	return true
+	return times, nil
 }
 
 type reservationMemoryStore struct {
@@ -94,100 +117,9 @@ func (s reservationMemoryStore) Save(record *reservation) error {
 	if record.Id == 0 {
 		record.Id = s.newId()
 	}
+	if record.Created.IsZero() {
+		record.Created = time.Now()
+	}
 	s.records[record.Id] = record
 	return nil
-}
-
-type event struct {
-	reservationId reservationId
-}
-
-func (e event) IsReserved() bool {
-	return e.reservationId > 0
-}
-
-type calendar struct {
-	events                map[time.Time]event
-	reservations          []reservation
-	reservationPrimaryKey uint32
-}
-
-func newCalendar() calendar {
-	return calendar{
-		events: make(map[time.Time]event),
-	}
-}
-
-func (c calendar) String() string {
-	var lines []string
-	lines = append(lines, "\n== Calendar ==")
-	for t, event := range c.events {
-		l := t.Format(pretty)
-		if event.IsReserved() {
-			l = l + " (Reserved)"
-		}
-		lines = append(lines, l)
-	}
-	return strings.Join(lines, "\n")
-}
-
-func (c calendar) SetAvailable(r dateRange) {
-	for _, t := range r.EachDay() {
-		c.events[t] = event{}
-	}
-}
-
-var unavailable = errors.New("dates unavailable")
-
-func (c calendar) Available() []time.Time {
-	var days []time.Time
-	for t, e := range c.events {
-		if !e.IsReserved() {
-			days = append(days, t)
-		}
-	}
-	return days
-}
-
-func (c calendar) IsAvailable(dr dateRange) bool {
-	// are all days available?
-	for _, t := range dr.EachDay() {
-		event, ok := c.events[t]
-		if !ok {
-			return false
-		}
-		if event.IsReserved() {
-			return false
-		}
-	}
-	return true
-}
-
-func (c calendar) Reserve(dr dateRange, rc rateCode, gid guestId) error {
-	if !c.IsAvailable(dr) {
-		return unavailable
-	}
-
-	id := c.newReservation(gid, dr, rc)
-	for _, t := range dr.EachDay() {
-		c.events[t] = event{reservationId: id}
-	}
-	return nil
-}
-
-func (c calendar) newReservation(g guestId, dr dateRange, rc rateCode) reservationId {
-	res := reservation{
-		Id:      c.newReservationId(),
-		Created: time.Now(),
-		Dates:   dr,
-		GuestId: g,
-		Rate:    rc,
-	}
-	c.reservations = append(c.reservations, res)
-	return res.Id
-}
-
-func (c calendar) newReservationId() reservationId {
-	id := atomic.AddUint32(&c.reservationPrimaryKey, 1)
-	return reservationId(id)
 }
