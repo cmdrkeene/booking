@@ -19,6 +19,7 @@ type reservation struct {
 
 type reservationStore interface {
 	Save(*reservation) error
+	List() ([]reservation, error)
 }
 
 type reserver interface {
@@ -27,23 +28,69 @@ type reserver interface {
 	Reserve(dateRange, rateCode, guestId) error
 }
 
+type reservationManager struct {
+	available []time.Time
+	store     reservationStore
+}
+
+func newReservationManager(available []time.Time, store reservationStore) reservationManager {
+	return reservationManager{
+		available: available,
+		store:     store,
+	}
+}
+
+func (m reservationManager) Reserve(dr dateRange, rc rateCode, id guestId) error {
+	if !m.isAvailable(dr) {
+		return unavailable
+	}
+
+	return nil
+}
+
+func (m reservationManager) isAvailable(dr dateRange) bool {
+	var include = func(test time.Time) bool {
+		for _, item := range m.available {
+			if item == test {
+				return true
+			}
+		}
+		return false
+	}
+
+	for _, d := range dr.EachDay() {
+		if !include(d) {
+			return false
+		}
+	}
+	return true
+}
+
 type reservationMemoryStore struct {
 	lastId  uint32
 	records map[reservationId]*reservation
 }
 
-func newReservationMemoryStore() *reservationMemoryStore {
-	return &reservationMemoryStore{
+func newReservationMemoryStore() reservationMemoryStore {
+	return reservationMemoryStore{
 		lastId:  0,
 		records: make(map[reservationId]*reservation),
 	}
 }
 
-func (s *reservationMemoryStore) newId() reservationId {
+func (s reservationMemoryStore) newId() reservationId {
 	return reservationId(atomic.AddUint32(&s.lastId, 1))
 }
 
-func (s *reservationMemoryStore) Save(record *reservation) error {
+func (s reservationMemoryStore) List() ([]reservation, error) {
+	var list []reservation
+	for _, rec := range s.records {
+		list = append(list, *rec)
+	}
+	return list, nil
+}
+
+func (s reservationMemoryStore) Save(record *reservation) error {
 	if record.Id == 0 {
 		record.Id = s.newId()
 	}
