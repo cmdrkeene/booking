@@ -21,7 +21,7 @@ type availabilityTable struct {
 func newAvailabilityTable(db *sql.DB) availabilityTable {
 	db.Exec(`
     CREATE TABLE Availability (
-      Date DATETIME NOT NULL
+      Date datetime NOT NULL
     );
   `)
 
