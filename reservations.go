@@ -120,9 +120,10 @@ func (table reservationTable) List() ([]reservation, error) {
 		if err != nil {
 			return []reservation{}, err
 		}
-
+		dates := newDateRangeBetween(start.UTC(), end.UTC())
+		log.Print("dates", dates)
 		rec := reservation{
-			dates: newDateRangeBetween(start, end),
+			dates: dates,
 			guest: guestId(guest),
 			rate:  rateCode(rate),
 		}
@@ -159,6 +160,7 @@ func (m reservationManager) Reserve(dates dateRange, rate rateCode, guest guestI
 		return err
 	}
 	if !dates.Coincident(available) {
+		log.Print("dates not available")
 		return unavailable
 	}
 
@@ -167,7 +169,9 @@ func (m reservationManager) Reserve(dates dateRange, rate rateCode, guest guestI
 	if err != nil {
 		return err
 	}
+	log.Print("got reserved", reserved)
 	if dates.Coincident(reserved) {
+		log.Print("dates reserved")
 		return unavailable
 	}
 

@@ -68,7 +68,7 @@ func (table availabilityTable) List() ([]time.Time, error) {
 		if err != nil {
 			return []time.Time{}, err
 		}
-		list = append(list, t)
+		list = append(list, t.UTC())
 	}
 	err = rows.Err()
 	if err != nil {

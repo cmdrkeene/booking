@@ -15,17 +15,18 @@ func newDateRange(start time.Time, numDays int) dateRange {
 		panic("numDays must be > 0")
 	}
 
+	t := start.UTC()
 	dates := dateRange{}
 	for i := 0; i < numDays; i++ {
 		delta := time.Duration(i) * day
-		dates.list = append(dates.list, start.Add(delta))
+		dates.list = append(dates.list, t.Add(delta))
 	}
 
 	return dates
 }
 
 func newDateRangeBetween(start, end time.Time) dateRange {
-	numDays := int(end.Sub(start).Hours() / 24)
+	numDays := int(end.Sub(start).Hours()/24) + 1
 	return newDateRange(start, numDays)
 }
 
