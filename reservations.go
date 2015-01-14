@@ -9,6 +9,12 @@ import (
 
 var unavailable = errors.New("unavailable")
 
+type availabilityStore interface {
+	Add(time.Time) error
+	Remove(time.Time) error
+	List() ([]time.Time, error)
+}
+
 type reservationId uint32
 
 type reservation struct {
@@ -31,26 +37,22 @@ type reserver interface {
 }
 
 type reservationManager struct {
-	available    []time.Time
-	availability map[time.Time]interface{}
-	store        reservationStore
+	availability availabilityStore
+	reservations reservationStore
 }
 
-func newReservationManager(available []time.Time, store reservationStore) reservationManager {
-	m := reservationManager{
-		available:    available,
-		availability: make(map[time.Time]interface{}),
-		store:        store,
-	}
-	for _, t := range available {
-		m.availability[t] = struct{}{}
-	}
-	return m
+func newReservationManager(a availabilityStore, r reservationStore) reservationManager {
+	return reservationManager{a, r}
 }
 
 func (m reservationManager) Reserve(dr dateRange, rc rateCode, id guestId) error {
 	// check available
-	if !dr.Coincident(m.available) {
+	available, err := m.availability.List()
+	if err != nil {
+		return err
+	}
+	log.Print("availability", available)
+	if !dr.Coincident(available) {
 		return unavailable
 	}
 
@@ -66,7 +68,7 @@ func (m reservationManager) Reserve(dr dateRange, rc rateCode, id guestId) error
 
 	// save
 	record := &reservation{Dates: dr, GuestId: id, Rate: rc}
-	err = m.store.Save(record)
+	err = m.reservations.Save(record)
 	if err != nil {
 		return err
 	}
@@ -75,13 +77,13 @@ func (m reservationManager) Reserve(dr dateRange, rc rateCode, id guestId) error
 }
 
 func (m reservationManager) reserved() ([]time.Time, error) {
-	records, err := m.store.List()
+	list, err := m.reservations.List()
 	if err != nil {
 		return []time.Time{}, err
 	}
 
 	var times []time.Time
-	for _, r := range records {
+	for _, r := range list {
 		for _, t := range r.Dates.EachDay() {
 			times = append(times, t)
 		}
