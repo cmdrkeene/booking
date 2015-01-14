@@ -11,7 +11,7 @@ import (
 type bookingId uint32
 
 func (id bookingId) String() string {
-	return fmt.Sprintf("booking:%d ", id)
+	return fmt.Sprintf("booking:%d", id)
 }
 
 // Workflow to orchestrate a guest paying for a reservation
@@ -79,7 +79,7 @@ func newBooking(
 	if err != nil {
 		return nil, err
 	}
-	log.Print(b.id, "created")
+	log.Println(b.id, "created")
 	return b, nil
 }
 
@@ -101,7 +101,7 @@ func (b *booking) Schedule(dates dateRange, rate rateCode) error {
 		return err
 	}
 
-	log.Print(b.id, "scheduled")
+	log.Println(b.id, "scheduled")
 	return nil
 }
 
@@ -122,7 +122,7 @@ func (b *booking) Register(name, email string) error {
 	if err != nil {
 		return err
 	}
-	log.Print(b.id, "registered")
+	log.Println(b.id, "registered")
 	return nil
 }
 
@@ -142,7 +142,7 @@ func (b *booking) Pay(card creditCard) error {
 	if err != nil {
 		return err
 	}
-	log.Print(b.id, "paid")
+	log.Println(b.id, "paid")
 	return nil
 }
 
@@ -162,7 +162,7 @@ func (b *booking) Reserve() error {
 		return err
 	}
 
-	log.Print(b.id, "complete")
+	log.Println(b.id, "complete")
 	return nil
 }
 

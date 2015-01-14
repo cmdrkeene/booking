@@ -1,6 +1,7 @@
 package booking
 
 import (
+	"reflect"
 	"testing"
 	"time"
 )
@@ -69,7 +70,7 @@ func TestBookingStateMachine(t *testing.T) {
 	}
 
 	// Complete
-	if booking.dates != dates {
+	if !reflect.DeepEqual(booking.dates, dates) {
 		t.Error("want", dates)
 		t.Error("got ", booking.dates)
 	}

@@ -7,15 +7,34 @@ const pretty = "January 2, 2006"
 const iso8601 = "2006-01-02"
 
 type dateRange struct {
-	days  int // number of days from start, must be > 0
-	start time.Time
+	list []time.Time
 }
 
-func newDateRange(t time.Time, days int) dateRange {
-	if days == 0 {
-		panic("minimum days is 1")
+func newDateRange(start time.Time, numDays int) dateRange {
+	if numDays == 0 {
+		panic("numDays must be > 0")
 	}
-	return dateRange{start: t, days: days}
+
+	dates := dateRange{}
+	for i := 0; i < numDays; i++ {
+		delta := time.Duration(i) * day
+		dates.list = append(dates.list, start.Add(delta))
+	}
+
+	return dates
+}
+
+func newDateRangeBetween(start, end time.Time) dateRange {
+	numDays := int(end.Sub(start).Hours() / 24)
+	return newDateRange(start, numDays)
+}
+
+func (r dateRange) Start() time.Time {
+	return r.list[0]
+}
+
+func (r dateRange) End() time.Time {
+	return r.list[len(r.list)-1]
 }
 
 // return true if all times in range present in list
@@ -24,7 +43,7 @@ func (r dateRange) Coincident(list []time.Time) bool {
 	for _, t := range list {
 		set[t] = struct{}{}
 	}
-	for _, t := range r.EachDay() {
+	for _, t := range r.list {
 		if _, ok := set[t]; !ok {
 			return false
 		}
@@ -33,16 +52,9 @@ func (r dateRange) Coincident(list []time.Time) bool {
 }
 
 func (r dateRange) EachDay() []time.Time {
-	var days []time.Time
-	for i := 0; i < r.days; i++ {
-		delta := time.Duration(i) * day
-		days = append(days, r.start.Add(delta))
-	}
-	return days
+	return r.list
 }
 
 func (r dateRange) String() string {
-	t1 := r.start.Format(pretty)
-	t2 := r.start.Add(time.Duration(r.days) * day).Format(pretty)
-	return t1 + " to " + t2
+	return r.Start().Format(pretty) + " to " + r.End().Format(pretty)
 }

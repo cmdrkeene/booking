@@ -2,11 +2,16 @@ package booking
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 	"sync/atomic"
 )
 
 type guestId uint32
+
+func (id guestId) String() string {
+	return fmt.Sprintf("guest:%d", id)
+}
 
 type guest struct {
 	Email string

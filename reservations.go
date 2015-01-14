@@ -1,9 +1,10 @@
 package booking
 
 import (
+	"database/sql"
 	"errors"
+	"fmt"
 	"log"
-	"sync/atomic"
 	"time"
 )
 
@@ -11,17 +12,129 @@ var unavailable = errors.New("unavailable")
 
 type reservationId uint32
 
+func (id reservationId) String() string {
+	return fmt.Sprintf("reservation:%d", id)
+}
+
 type reservation struct {
-	Id      reservationId
-	Created time.Time
-	GuestId guestId
-	Dates   dateRange
-	Rate    rateCode
+	id    reservationId
+	guest guestId
+	dates dateRange
+	rate  rateCode
 }
 
 type reservationStore interface {
-	Save(*reservation) error
+	Reserve(dateRange, guestId, rateCode) (reservationId, error)
+	Cancel(reservationId) error
 	List() ([]reservation, error)
+}
+
+type reservationTable struct {
+	reserve *sql.Stmt
+	cancel  *sql.Stmt
+	list    *sql.Stmt
+}
+
+func newReservationTable(db *sql.DB) reservationTable {
+	t := reservationTable{}
+
+	_, err := db.Exec(`
+    CREATE TABLE Reservation (
+      Cancelled bool DEFAULT false NOT NULL,
+      End datetime NOT NULL,
+      GuestId int NOT NULL,
+      Id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+      RateCode INTEGER NOT NULL,
+      Start datetime NOT NULL
+    )
+  `)
+	if err != nil {
+		panic(err)
+	}
+
+	// var err error
+
+	t.reserve, err = db.Prepare(`
+    INSERT INTO Reservation
+    (Start, End, GuestId, RateCode)
+    VALUES
+    ($1, $2, $3, $4)
+  `)
+	if err != nil {
+		panic(err)
+	}
+
+	t.list, err = db.Prepare(`
+    SELECT
+    Start, End, GuestId, RateCode
+    FROM Reservation
+  `)
+	if err != nil {
+		panic(err)
+	}
+
+	return t
+}
+
+func (table reservationTable) Reserve(
+	dates dateRange,
+	guest guestId,
+	rate rateCode,
+) (reservationId, error) {
+	res, err := table.reserve.Exec(
+		dates.Start(),
+		dates.End(),
+		guest,
+		rate,
+	)
+	if err != nil {
+		return 0, err
+	}
+
+	lastId, err := res.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+
+	return reservationId(lastId), nil
+}
+
+func (table reservationTable) Cancel(reservationId) error {
+	return nil
+}
+
+func (table reservationTable) List() ([]reservation, error) {
+	rows, err := table.list.Query()
+	if err != nil {
+		return []reservation{}, err
+	}
+	defer rows.Close()
+
+	var list []reservation
+	for rows.Next() {
+		var start time.Time
+		var end time.Time
+		var guest int
+		var rate rateCode
+		err = rows.Scan(&start, &end, &guest, &rate)
+		if err != nil {
+			return []reservation{}, err
+		}
+
+		rec := reservation{
+			dates: newDateRangeBetween(start, end),
+			guest: guestId(guest),
+			rate:  rateCode(rate),
+		}
+		list = append(list, rec)
+	}
+
+	err = rows.Err()
+	if err != nil {
+		return []reservation{}, err
+	}
+
+	return list, nil
 }
 
 type reserver interface {
@@ -39,34 +152,32 @@ func newReservationManager(a availabilityStore, r reservationStore) reservationM
 	return reservationManager{a, r}
 }
 
-func (m reservationManager) Reserve(dr dateRange, rc rateCode, id guestId) error {
+func (m reservationManager) Reserve(dates dateRange, rate rateCode, guest guestId) error {
 	// check available
 	available, err := m.availability.List()
 	if err != nil {
 		return err
 	}
-	log.Print("availability", available)
-	if !dr.Coincident(available) {
+	if !dates.Coincident(available) {
 		return unavailable
 	}
 
 	// check reserved
 	reserved, err := m.reserved()
-	log.Print("reserved", reserved)
 	if err != nil {
 		return err
 	}
-	if dr.Coincident(reserved) {
+	if dates.Coincident(reserved) {
 		return unavailable
 	}
 
 	// save
-	record := &reservation{Dates: dr, GuestId: id, Rate: rc}
-	err = m.reservations.Save(record)
+	reservationId, err := m.reservations.Reserve(dates, guest, rate)
 	if err != nil {
 		return err
 	}
 
+	log.Println(reservationId, "created by", guest, "for", dates)
 	return nil
 }
 
@@ -78,44 +189,9 @@ func (m reservationManager) reserved() ([]time.Time, error) {
 
 	var times []time.Time
 	for _, r := range list {
-		for _, t := range r.Dates.EachDay() {
+		for _, t := range r.dates.EachDay() {
 			times = append(times, t)
 		}
 	}
 	return times, nil
-}
-
-type reservationMemoryStore struct {
-	lastId  uint32
-	records map[reservationId]*reservation
-}
-
-func newReservationMemoryStore() reservationMemoryStore {
-	return reservationMemoryStore{
-		lastId:  0,
-		records: make(map[reservationId]*reservation),
-	}
-}
-
-func (s reservationMemoryStore) newId() reservationId {
-	return reservationId(atomic.AddUint32(&s.lastId, 1))
-}
-
-func (s reservationMemoryStore) List() ([]reservation, error) {
-	var list []reservation
-	for _, rec := range s.records {
-		list = append(list, *rec)
-	}
-	return list, nil
-}
-
-func (s reservationMemoryStore) Save(record *reservation) error {
-	if record.Id == 0 {
-		record.Id = s.newId()
-	}
-	if record.Created.IsZero() {
-		record.Created = time.Now()
-	}
-	s.records[record.Id] = record
-	return nil
 }

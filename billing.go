@@ -49,6 +49,17 @@ const (
 	rateWithoutBunny
 )
 
+func (c rateCode) String() string {
+	switch c {
+	case rateWithoutBunny:
+		return "NOBUNNY"
+	case rateWithBunny:
+		return "BUNNY"
+	default:
+		panic("unknown rate code")
+	}
+}
+
 func (c rateCode) Amount() amount {
 	switch c {
 	case rateWithoutBunny:

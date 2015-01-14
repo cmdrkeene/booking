@@ -13,7 +13,6 @@ type availabilityStore interface {
 
 type availabilityTable struct {
 	add    *sql.Stmt
-	create *sql.Stmt
 	remove *sql.Stmt
 	list   *sql.Stmt
 }

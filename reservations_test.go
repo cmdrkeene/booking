@@ -1,20 +1,32 @@
 package booking
 
 import (
+	"database/sql"
+	"os"
 	"testing"
 	"time"
 )
 
 func TestReservationManager(t *testing.T) {
+	path := "./reservation_test.db"
+	os.Remove(path)
+	defer os.Remove(path)
+
+	db, err := sql.Open("sqlite3", path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
 	guest := guestId(1)
 	feb1 := time.Date(2015, 2, 1, 0, 0, 0, 0, time.UTC)
 
 	availability := &testAvailablity{[]time.Time{feb1, feb1.Add(day)}}
-	reservations := newReservationMemoryStore()
+	reservations := newReservationTable(db)
 	manager := newReservationManager(availability, reservations)
 
 	// not available
-	err := manager.Reserve(newDateRange(feb1, 7), rateWithBunny, guest)
+	err = manager.Reserve(newDateRange(feb1, 7), rateWithBunny, guest)
 	if err != unavailable {
 		t.Error("want", unavailable)
 		t.Error("got ", err)
