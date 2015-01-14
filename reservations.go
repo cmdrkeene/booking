@@ -23,9 +23,11 @@ type reservation struct {
 	rate  rateCode
 }
 
-type reservationStore interface {
+type reservationCreator interface {
 	Reserve(dateRange, guestId, rateCode) (reservationId, error)
-	Cancel(reservationId) error
+}
+
+type reservationLister interface {
 	List() ([]reservation, error)
 }
 
@@ -40,7 +42,6 @@ func newReservationTable(db *sql.DB) reservationTable {
 
 	_, err := db.Exec(`
     CREATE TABLE Reservation (
-      Cancelled bool DEFAULT false NOT NULL,
       End datetime NOT NULL,
       GuestId int NOT NULL,
       Id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -99,10 +100,6 @@ func (table reservationTable) Reserve(
 	return reservationId(lastId), nil
 }
 
-func (table reservationTable) Cancel(reservationId) error {
-	return nil
-}
-
 func (table reservationTable) List() ([]reservation, error) {
 	rows, err := table.list.Query()
 	if err != nil {
@@ -138,18 +135,12 @@ func (table reservationTable) List() ([]reservation, error) {
 	return list, nil
 }
 
-type reserver interface {
-	Available() []time.Time
-	IsAvailable(dateRange) bool
-	Reserve(dateRange, rateCode, guestId) error
-}
-
 type reservationManager struct {
 	availability availabilityStore
-	reservations reservationStore
+	reservations reservationTable
 }
 
-func newReservationManager(a availabilityStore, r reservationStore) reservationManager {
+func newReservationManager(a availabilityStore, r reservationTable) reservationManager {
 	return reservationManager{a, r}
 }
 

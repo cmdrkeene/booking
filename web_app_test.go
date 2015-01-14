@@ -147,7 +147,7 @@ func (ts testService) AvailableDays() ([]time.Time, error) {
 	return ts.availableDays, nil
 }
 
-func (ts testService) Book(bookingForm) (bookingId, error) {
+func (ts testService) Book(bookingForm) (reservationId, error) {
 	return 0, nil
 }
 

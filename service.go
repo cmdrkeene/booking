@@ -4,13 +4,12 @@ import "time"
 
 type Service interface {
 	AvailableDays() ([]time.Time, error)
-	Book(bookingForm) (bookingId, error)
+	Book(bookingForm) (reservationId, error)
 }
 
 type service struct {
 	dataPath       string
 	processorToken string
-	reserver       reserver
 }
 
 func NewService(dataPath, processorToken string) service {
@@ -29,6 +28,6 @@ func (s service) AvailableDays() ([]time.Time, error) {
 	return days, nil
 }
 
-func (s service) Book(bookingForm) (bookingId, error) {
+func (s service) Book(bookingForm) (reservationId, error) {
 	return 0, nil
 }
