@@ -88,7 +88,7 @@ func (b *booking) Schedule(dates dateRange, rate rateCode) error {
 		return bookingStateError
 	}
 
-	if !b.reserver.IsAvailable(dates, rate) {
+	if !b.reserver.IsAvailable(dates) {
 		return unavailable
 	}
 

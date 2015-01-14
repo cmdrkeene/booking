@@ -105,7 +105,11 @@ func (t testRegistrar) Register(name, email string) (guestId, error) {
 
 type testReserver struct{ err error }
 
-func (t testReserver) IsAvailable(dateRange, rateCode) bool {
+func (t testReserver) Available() []time.Time {
+	return []time.Time{}
+}
+
+func (t testReserver) IsAvailable(dateRange) bool {
 	return t.err == nil
 }
 

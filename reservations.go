@@ -7,11 +7,6 @@ import (
 	"time"
 )
 
-type reserver interface {
-	IsAvailable(dateRange, rateCode) bool
-	Reserve(dateRange, rateCode, guestId) error
-}
-
 type reservationId uint32
 
 type reservation struct {
@@ -24,6 +19,12 @@ type reservation struct {
 
 type reservationStore interface {
 	Save(*reservation) error
+}
+
+type reserver interface {
+	Available() []time.Time
+	IsAvailable(dateRange) bool
+	Reserve(dateRange, rateCode, guestId) error
 }
 
 type reservationMemoryStore struct {
@@ -50,16 +51,11 @@ func (s *reservationMemoryStore) Save(record *reservation) error {
 	return nil
 }
 
-// if event exists and does not have a reservationId, it is "available"
 type event struct {
 	reservationId reservationId
 }
 
-func (e event) Available() bool {
-	return !e.Reserved()
-}
-
-func (e event) Reserved() bool {
+func (e event) IsReserved() bool {
 	return e.reservationId > 0
 }
 
@@ -80,7 +76,7 @@ func (c calendar) String() string {
 	lines = append(lines, "\n== Calendar ==")
 	for t, event := range c.events {
 		l := t.Format(pretty)
-		if event.Reserved() {
+		if event.IsReserved() {
 			l = l + " (Reserved)"
 		}
 		lines = append(lines, l)
@@ -96,14 +92,24 @@ func (c calendar) SetAvailable(r dateRange) {
 
 var unavailable = errors.New("dates unavailable")
 
-func (c calendar) IsAvailable(dr dateRange, rc rateCode) bool {
+func (c calendar) Available() []time.Time {
+	var days []time.Time
+	for t, e := range c.events {
+		if !e.IsReserved() {
+			days = append(days, t)
+		}
+	}
+	return days
+}
+
+func (c calendar) IsAvailable(dr dateRange) bool {
 	// are all days available?
 	for _, t := range dr.EachDay() {
 		event, ok := c.events[t]
 		if !ok {
 			return false
 		}
-		if !event.Available() {
+		if event.IsReserved() {
 			return false
 		}
 	}
@@ -111,7 +117,7 @@ func (c calendar) IsAvailable(dr dateRange, rc rateCode) bool {
 }
 
 func (c calendar) Reserve(dr dateRange, rc rateCode, gid guestId) error {
-	if !c.IsAvailable(dr, rc) {
+	if !c.IsAvailable(dr) {
 		return unavailable
 	}
 
