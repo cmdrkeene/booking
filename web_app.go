@@ -28,6 +28,12 @@ const templateHome = `
         </ul>
       </fieldset>
       <fieldset>
+        <legend>Rate</legend>
+        <input name="rate" type="radio" value="WithBunny" /> <b>$150</b> With Bunny
+        <br />
+        <input name="rate" type="radio" value="WithBunny" /> <b>$200</b> Without Bunny
+      </fieldset>
+      <fieldset>
         <legend>Contact</legend>
         <table>
        		<tr>
