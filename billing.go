@@ -13,6 +13,13 @@ type charger interface {
 	Charge(creditCard, amount) error
 }
 
+type fakeCharger struct{}
+
+func (f fakeCharger) Charge(c creditCard, a amount) error {
+	log.Println("Charging", c, a.InDollars())
+	return nil
+}
+
 type stripeCharger struct{}
 
 func newStripeCharger(key string) stripeCharger {
