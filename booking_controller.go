@@ -10,7 +10,7 @@ import (
 // Web UI for making a one-step booking
 type bookingController struct {
 	availability timeLister
-	newTemplate  *template.Template
+	template     *template.Template
 	path         string
 }
 
@@ -20,22 +20,9 @@ type timeLister interface {
 
 func newBookingController(db *sql.DB) bookingController {
 	controller := bookingController{}
-
-	// domain
 	controller.availability = newAvailabilityTable(db)
-
-	// routing
 	controller.path = "/"
-
-	// templates
-	var err error
-	controller.newTemplate, err = template.New("booking.new").
-		Funcs(dateHelpers).
-		Parse(bookingTemplateNew)
-	if err != nil {
-		panic(err)
-	}
-
+	controller.template = newBookingTemplate()
 	return controller
 }
 
@@ -66,8 +53,14 @@ func (c bookingController) new(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var data = struct{ Available []time.Time }{available}
-	c.newTemplate.Execute(w, data)
+	var data = struct {
+		Available []time.Time
+		Rates     []rateCode
+	}{
+		available,
+		[]rateCode{rateWithBunny, rateWithoutBunny},
+	}
+	c.template.Execute(w, data)
 }
 
 func (c bookingController) create(w http.ResponseWriter, r *http.Request) {
@@ -87,7 +80,10 @@ func (c bookingController) create(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-const bookingTemplateNew = `
+func newBookingTemplate() *template.Template {
+	t := template.New("booking.new")
+	t = t.Funcs(dateHelpers)
+	src := `
 <html>
   <body>
     <h1>15 Dunham Place</h1>
@@ -104,9 +100,13 @@ const bookingTemplateNew = `
       </fieldset>
       <fieldset>
         <legend>Rate</legend>
-        <input name="rate" type="radio" value="WithBunny" /> <b>$150</b> With Bunny
-        <br />
-        <input name="rate" type="radio" value="WithBunny" /> <b>$200</b> Without Bunny
+        {{range .Rates}}
+        <div>
+          <input name="rate" type="radio" value="WithBunny" />
+          <b>{{.Amount.InDollars}}</b>
+          {{.Name}}
+        </div>
+        {{end}}
       </fieldset>
       <fieldset>
         <legend>Contact</legend>
@@ -157,5 +157,10 @@ const bookingTemplateNew = `
       <input type="submit" value="Book" />
     </form>
   </body>
-</html>
-`
+</html>`
+	t, err := t.Parse(src)
+	if err != nil {
+		panic(err)
+	}
+	return t
+}

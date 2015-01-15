@@ -1,6 +1,9 @@
 package booking
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 type charger interface {
 	Charge(creditCard, amount) error
@@ -32,6 +35,10 @@ type amount struct {
 	Cents int // positive or negative
 }
 
+func (a amount) InDollars() string {
+	return fmt.Sprintf("$%.02f", float32(a.Cents)/100)
+}
+
 type entry struct {
 	Amount amount
 	Date   time.Time
@@ -49,15 +56,19 @@ const (
 	rateWithoutBunny
 )
 
-func (c rateCode) String() string {
+func (c rateCode) Name() string {
 	switch c {
 	case rateWithoutBunny:
-		return "NOBUNNY"
+		return "Without Bunny"
 	case rateWithBunny:
-		return "BUNNY"
+		return "With Bunnys"
 	default:
 		panic("unknown rate code")
 	}
+}
+
+func (c rateCode) String() string {
+	return c.Name()
 }
 
 func (c rateCode) Amount() amount {

@@ -37,17 +37,12 @@ func TestBookingControllerNew(t *testing.T) {
 	}
 
 	// check availability shown
-	want := []byte("February 1, 2015")
-	if !bytes.Contains(w.Body.Bytes(), want) {
-		t.Error("want", string(want))
-		t.Error("got ", string(w.Body.Bytes()))
-	}
+	mustContain(t, w.Body, "February 1, 2015")
+	mustContain(t, w.Body, "February 2, 2015")
 
-	want = []byte("February 2, 2015")
-	if !bytes.Contains(w.Body.Bytes(), want) {
-		t.Error("want", string(want))
-		t.Error("got ", string(w.Body.Bytes()))
-	}
+	// check rates shown
+	mustContain(t, w.Body, "With Bunny")
+	mustContain(t, w.Body, "Without Bunny")
 
 	// check form
 	// TODO make more rigorous - perhaps bookingForm can render its own template?
@@ -113,6 +108,14 @@ func TestBookingControllerCreate(t *testing.T) {
 				t.Error("got ", string(w.Body.Bytes()))
 			}
 		}
+	}
+}
+
+// helper for checking if strings occur in Buffer
+func mustContain(t *testing.T, b *bytes.Buffer, s string) {
+	if !bytes.Contains(b.Bytes(), []byte(s)) {
+		t.Error("want", s)
+		t.Error("got ", string(b.Bytes()))
 	}
 }
 
