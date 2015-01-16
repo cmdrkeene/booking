@@ -22,20 +22,23 @@ func (f fakeCharger) Charge(c creditCard, a amount) error {
 
 type stripeCharger struct{}
 
-func newStripeCharger(key string) stripeCharger {
-	stripe.Key = key
+const stripeTestKey = "sk_test_BQokikJOvBiI2HlWgH4olfQ2"
+
+func newStripeCharger(string) stripeCharger {
+	stripe.Key = stripeTestKey
 	return stripeCharger{}
 }
 
-func (c stripeCharger) Charge(card creditCard, amount amount) error {
+func (s stripeCharger) Charge(c creditCard, a amount) error {
+	log.Println("Charging", c, a.InDollars())
 	params := &stripe.ChargeParams{
-		Amount:   uint64(amount.Cents),
+		Amount:   uint64(a.Cents),
 		Currency: "usd",
 		Card: &stripe.CardParams{
-			Number: card.Number,
-			Month:  card.Month,
-			Year:   card.Year,
-			CVC:    card.CVC,
+			Number: c.Number,
+			Month:  c.Month,
+			Year:   c.Year,
+			CVC:    c.CVC,
 		},
 		Desc: "Apartment Reservation",
 	}
