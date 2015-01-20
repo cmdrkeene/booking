@@ -18,9 +18,9 @@ type timeLister interface {
 	List() ([]time.Time, error)
 }
 
-func newBookingController(reg *Registry) bookingController {
+func newBookingController(r Registry) bookingController {
 	controller := bookingController{}
-	controller.availability = newAvailabilityTable(reg.DB())
+	controller.availability = newAvailabilityTable(r.DB())
 	controller.path = "/"
 	controller.template = newBookingTemplate()
 	return controller

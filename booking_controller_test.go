@@ -12,10 +12,7 @@ import (
 )
 
 func TestBookingControllerNew(t *testing.T) {
-	db, _ := sql.Open("sqlite3", ":memory:")
-	defer db.Close()
-
-	controller := newBookingController(&Registry{db: db})
+	controller := newBookingController(newTestRegistry())
 
 	// fake availability in test
 	av := &testAvailablity{}
@@ -82,10 +79,7 @@ func TestBookingControllerCreate(t *testing.T) {
 		{completeForm, http.StatusCreated, nil},
 	}
 
-	db, _ := sql.Open("sqlite3", ":memory:")
-	defer db.Close()
-
-	controller := newBookingController(&Registry{db: db})
+	controller := newBookingController(newTestRegistry())
 
 	for _, tt := range tests {
 		url := "/?" + tt.form.Encode()
@@ -132,4 +126,22 @@ func getElements(doc *html.Node, name string) []*html.Node {
 	}
 	f(doc)
 	return found
+}
+
+type testRegistry struct {
+	db *sql.DB
+}
+
+func newTestRegistry() testRegistry {
+	reg := testRegistry{}
+	var err error
+	reg.db, err = sql.Open("sqlite3", ":memory:")
+	if err != nil {
+		panic(err)
+	}
+	return reg
+}
+
+func (r testRegistry) DB() *sql.DB {
+	return r.db
 }
