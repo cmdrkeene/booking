@@ -10,16 +10,31 @@ import (
 
 // Application is the primary exported object
 type Application struct {
+	registry *Registry
+}
+
+// Service Locator for dependencies
+type Registry struct {
 	db *sql.DB
+}
+
+func (r *Registry) DB() *sql.DB {
+	return r.db
+}
+
+func (r *Registry) Close() error {
+	return r.db.Close()
 }
 
 // Create an Application with an attached SQL dataSource
 // In this case, a path to a sqlite3 database
 func NewApplication(dataSourceName string) *Application {
 	app := &Application{}
+	registry := &Registry{}
+	app.registry = registry
 
 	var err error
-	app.db, err = sql.Open("sqlite3", dataSourceName)
+	registry.db, err = sql.Open("sqlite3", dataSourceName)
 	if err != nil {
 		panic(err)
 	}
@@ -31,12 +46,12 @@ func NewApplication(dataSourceName string) *Application {
 func (app *Application) NewServer(addr string) http.Server {
 	s := http.Server{}
 	s.Addr = addr
-	s.Handler = newBookingController(app.db)
+	s.Handler = newBookingController(app.registry)
 	return s
 }
 
 func (app *Application) Close() error {
-	err := app.db.Close()
+	err := app.registry.Close()
 	if err != nil {
 		log.Print(applicationError{err})
 		return err

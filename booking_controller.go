@@ -1,7 +1,6 @@
 package booking
 
 import (
-	"database/sql"
 	"html/template"
 	"net/http"
 	"time"
@@ -19,9 +18,9 @@ type timeLister interface {
 	List() ([]time.Time, error)
 }
 
-func newBookingController(db *sql.DB) bookingController {
+func newBookingController(reg *Registry) bookingController {
 	controller := bookingController{}
-	controller.availability = newAvailabilityTable(db)
+	controller.availability = newAvailabilityTable(reg.DB())
 	controller.path = "/"
 	controller.template = newBookingTemplate()
 	return controller

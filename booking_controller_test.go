@@ -15,7 +15,7 @@ func TestBookingControllerNew(t *testing.T) {
 	db, _ := sql.Open("sqlite3", ":memory:")
 	defer db.Close()
 
-	controller := newBookingController(db)
+	controller := newBookingController(&Registry{db: db})
 
 	// fake availability in test
 	av := &testAvailablity{}
@@ -85,7 +85,7 @@ func TestBookingControllerCreate(t *testing.T) {
 	db, _ := sql.Open("sqlite3", ":memory:")
 	defer db.Close()
 
-	controller := newBookingController(db)
+	controller := newBookingController(&Registry{db: db})
 
 	for _, tt := range tests {
 		url := "/?" + tt.form.Encode()
