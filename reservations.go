@@ -23,7 +23,7 @@ type reservation struct {
 	rate  rateCode
 }
 
-type reservationCreator interface {
+type reserver interface {
 	Reserve(dateRange, guestId, rateCode) (reservationId, error)
 }
 

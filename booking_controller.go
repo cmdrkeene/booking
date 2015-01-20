@@ -10,6 +10,7 @@ import (
 // Web UI for making a one-step booking
 type bookingController struct {
 	availability timeLister
+	reservations reserver
 	template     *template.Template
 	path         string
 }
@@ -76,7 +77,13 @@ func (c bookingController) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO actually do work here
+	// TODO - figure out who organizes all this jazz
+	// err = form.Submit()
+	// if err != nil {
+	// 	http.Error(w, err.Error(), http.StatusInternalServerError)
+	// 	return
+	// }
+
 	w.WriteHeader(http.StatusCreated)
 }
 
