@@ -1,10 +1,5 @@
 # Booking
 
-* TODO define top level interfaces for services
-* TODO test reservation service (crud for reservation records)
-* TODO test billing service with dummy processor
-* TODO test workflow state transitions, errors from services
-* TODO basic controller/pages for workflow
 * TODO workflow to offer aparment swap
 * TODO admin workflow
 
