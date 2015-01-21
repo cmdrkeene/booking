@@ -1,73 +1,47 @@
-/*
-Book and pay for our apartment during specific available dates.
-
-To make a booking
-
-* Dates must be available
-
-* Dates must be contiguous
-
-* Guest must be registered
-
-* CheckIn must be before CheckOut
-
-* CheckOut must be at least one day after CheckIn
-
-* Rate must be debited from ledger
-
-To make a payment
-
-* Amount must be non zero
-
-* CreditCard must be charged for amount
-
-* Credit must be recorded in ledger
-
-*/
 package booking
 
 import (
 	"database/sql"
+	"database/sql/driver"
+	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/golang/glog"
 )
 
-// List of dates available for booking
-type Calendar struct {
-	DB *sql.DB `inject:""`
-}
-
 // Simple date
-type date time.Time
+type date struct {
+	t time.Time
+}
 
-// Init creates table if needed
-func (c *Calendar) Init() {
-	_, err := c.DB.Exec(`
-		create table calendar (
-			date datetime,
-			available bool default true
+const iso8601Date = "2006-01-02"
+
+func (d date) String() string {
+	return d.t.Format(iso8601Date)
+}
+
+func (d *date) Scan(src interface{}) error {
+	t, ok := src.(time.Time)
+	if !ok {
+		err := errors.New(
+			fmt.Sprintf("can't scan date from db: %#v", src),
 		)
-	`)
-
-	if err == nil {
-		glog.Info("calendar table created")
-	} else {
-		glog.Warning(err)
+		return err
 	}
-}
-
-func (c *Calendar) Add(date) error {
+	d.t = t.UTC()
 	return nil
 }
 
-func (c *Calendar) Remove(date) error {
-	return nil
+func (d date) Value() (driver.Value, error) {
+	return driver.Value(d.t), nil
 }
 
-func (c *Calendar) List() ([]date, error) {
-	return []date{}, nil
+func newDate(year, month, day int) date {
+	return date{
+		t: time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC),
+	}
 }
 
 // Locator for a booking record

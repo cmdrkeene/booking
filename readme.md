@@ -1,5 +1,12 @@
 # Booking
 
+## Testing
+
+    $ brew install entr
+    $ ./autotest.sh
+
+## OLD
+
 * TODO workflow to offer aparment swap
 * TODO admin workflow
 
