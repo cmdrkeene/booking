@@ -8,12 +8,13 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-// Application is the primary exported object
+// Application is the primary exported object and doubles as a Registry
 type Application struct {
 	db *sql.DB
 }
 
 // Service Locator for dependencies
+// TODO perhaps make more abstract like Registry.Get()/Set()
 type Registry interface {
 	DB() *sql.DB
 }
