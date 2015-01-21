@@ -1,36 +1,55 @@
 package main
 
 import (
+	"database/sql"
 	"flag"
 	"fmt"
-	"io/ioutil"
-	"log"
 	"os"
 
 	"github.com/cmdrkeene/booking"
+	"github.com/facebookgo/inject"
+	_ "github.com/mattn/go-sqlite3"
 )
 
-var flagDb = flag.String("db", "", "Path to data file")
-var flagHttp = flag.String("http", ":3000", "HTTP address e.g. :3000")
-
 func main() {
+	flag.Set("logtostderr", "true")
 	flag.Parse()
 
-	if *flagDb == "" {
-		file, err := ioutil.TempFile(os.TempDir(), "booking")
-		if err != nil {
-			panic(err)
-		}
-		defer os.Remove(file.Name())
-		*flagDb = file.Name()
+	// Database
+	db, err := sql.Open("sqlite3", "/tmp/booking_2.sqlite")
+	if err != nil {
+		panic(err)
 	}
 
-	app := booking.NewApplication(*flagDb)
-	defer app.Close()
+	// Domain
+	var calendar booking.Calendar
+	var guestbook booking.Guestbook
+	var ledger booking.Ledger
+	var register booking.Register
+	var server booking.Server
 
-	if *flagHttp != "" {
-		server := app.NewServer(*flagHttp)
-		fmt.Println("listening on", *flagHttp)
-		log.Fatal(server.ListenAndServe())
+	// Dependency Injection
+	var g inject.Graph
+	err = g.Provide(
+		&inject.Object{Value: db},
+		&inject.Object{Value: &calendar},
+		&inject.Object{Value: &guestbook},
+		&inject.Object{Value: &ledger},
+		&inject.Object{Value: &register},
+		&inject.Object{Value: &server},
+	)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
+	if err = g.Populate(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+
+	// Init
+	calendar.Init()
+
+	// Start
+	server.ListenAndServe(":3000")
 }
