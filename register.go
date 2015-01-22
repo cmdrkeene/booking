@@ -66,17 +66,19 @@ func (r *Register) Book(
       values ($1, $2, $3, $4)
     `)
 		if err != nil {
-			return 0, err
+			panic(err)
 		}
 	}
 
 	result, err := r.book.Exec(checkIn, checkOut, guest, rate)
 	if err != nil {
+		glog.Error(err)
 		return 0, err
 	}
 
 	lastId, err := result.LastInsertId()
 	if err != nil {
+		glog.Error(err)
 		return 0, err
 	}
 
@@ -90,12 +92,13 @@ func (r *Register) Cancel(id bookingId) error {
 		var err error
 		r.cancel, err = r.DB.Prepare(`delete from Register where Id=$1`)
 		if err != nil {
-			return err
+			panic(err)
 		}
 	}
 
 	_, err := r.cancel.Exec(id)
 	if err != nil {
+		glog.Error(err)
 		return err
 	}
 
@@ -113,12 +116,13 @@ func (r *Register) List() ([]booking, error) {
       order by CheckIn asc
     `)
 		if err != nil {
-			return []booking{}, err
+			panic(err)
 		}
 	}
 
 	rows, err := r.list.Query()
 	if err != nil {
+		glog.Error(err)
 		return []booking{}, err
 	}
 	defer rows.Close()
@@ -139,6 +143,7 @@ func (r *Register) List() ([]booking, error) {
 			&rate,
 		)
 		if err != nil {
+			glog.Error(err)
 			return []booking{}, err
 		}
 

@@ -75,7 +75,7 @@ type Ledger struct {
 }
 
 func (l *Ledger) Balance(guestId) (amount, error) {
-	return amount(0), nil
+	return 0, nil
 }
 
 func (l *Ledger) Debit(guestId, amount, memo) error {

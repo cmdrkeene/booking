@@ -84,7 +84,7 @@ func (g *Guestbook) Lookup(byId guestId) (guest, error) {
 			`select Email, Id, Name, PhoneNumber from Guestbook where Id = $1`,
 		)
 		if err != nil {
-			return guest{}, err
+			panic(err)
 		}
 	}
 
@@ -106,6 +106,7 @@ func (g *Guestbook) Lookup(byId guestId) (guest, error) {
 	}
 
 	if err != nil {
+		glog.Error(err)
 		return guest{}, err
 	}
 
@@ -143,17 +144,19 @@ func (g *Guestbook) Register(
       values ($1, $2, $3)
     `)
 		if err != nil {
-			return 0, err
+			panic(err)
 		}
 	}
 
 	result, err := g.register.Exec(email.s, name, phone)
 	if err != nil {
+		glog.Error(err)
 		return 0, err
 	}
 
 	lastId, err := result.LastInsertId()
 	if err != nil {
+		glog.Error(err)
 		return 0, err
 	}
 

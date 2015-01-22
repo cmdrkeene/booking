@@ -46,6 +46,7 @@ func (c *Calendar) Add(dates ...date) error {
 	for _, d := range dates {
 		_, err := c.add.Exec(d)
 		if err != nil {
+			glog.Error(err)
 			return err
 		}
 	}
@@ -65,6 +66,7 @@ func (c *Calendar) List() ([]date, error) {
 
 	rows, err := c.list.Query()
 	if err != nil {
+		glog.Error(err)
 		return []date{}, err
 	}
 	defer rows.Close()
@@ -74,6 +76,7 @@ func (c *Calendar) List() ([]date, error) {
 		var d date
 		err := rows.Scan(&d)
 		if err != nil {
+			glog.Error(err)
 			return []date{}, err
 		}
 		list = append(list, d)
@@ -95,6 +98,7 @@ func (c *Calendar) Remove(dates ...date) error {
 	for _, d := range dates {
 		_, err := c.remove.Exec(d)
 		if err != nil {
+			glog.Error(err)
 			return err
 		}
 	}
