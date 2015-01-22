@@ -2,7 +2,11 @@ package booking
 
 import (
 	"database/sql"
+	"database/sql/driver"
+	"errors"
 	"fmt"
+
+	"github.com/golang/glog"
 )
 
 // A sum of money stored in 1/100th increments (e.g. cents)
@@ -22,10 +26,38 @@ type rate struct {
 	Amount amount
 }
 
+func (r *rate) Scan(src interface{}) error {
+	rawName, ok := src.([]byte)
+	if !ok {
+		err := errors.New(
+			fmt.Sprintf("can't scan rate from db: %#v", src),
+		)
+		glog.Error(err)
+		return err
+	}
+	name := string(rawName)
+	for _, element := range allRates {
+		if name == element.Name {
+			r.Amount = element.Amount
+			r.Name = element.Name
+			return nil
+		}
+	}
+
+	err := errors.New("can't find rate for " + name)
+	glog.Error(err)
+	return err
+}
+
+func (r rate) Value() (driver.Value, error) {
+	return driver.Value(r.Name), nil
+}
+
 // What we charge for the place
 var (
 	withBunny    = rate{Name: "With Bunny", Amount: amount(20000)}
-	withoutBunny = rate{Name: "With Bunny", Amount: amount(25000)}
+	withoutBunny = rate{Name: "Without Bunny", Amount: amount(25000)}
+	allRates     = []rate{withBunny, withoutBunny}
 )
 
 // See: http://www.regular-expressions.info/creditcard.html

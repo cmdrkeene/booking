@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"time"
+
+	"github.com/golang/glog"
 )
 
 // Simple date
@@ -24,6 +26,7 @@ func (d *date) Scan(src interface{}) error {
 		err := errors.New(
 			fmt.Sprintf("can't scan date from db: %#v", src),
 		)
+		glog.Error(err)
 		return err
 	}
 	d.t = t.UTC()

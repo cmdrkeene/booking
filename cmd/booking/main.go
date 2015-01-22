@@ -16,7 +16,7 @@ func main() {
 	flag.Parse()
 
 	// Database
-	db, err := sql.Open("sqlite3", "/tmp/booking_2.sqlite")
+	db, err := sql.Open("sqlite3", ":memory:")
 	if err != nil {
 		panic(err)
 	}
@@ -46,9 +46,6 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-
-	// Init
-	calendar.Init()
 
 	// Start
 	server.ListenAndServe(":3000")

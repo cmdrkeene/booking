@@ -13,6 +13,24 @@ import (
 // Locator for a guest record
 type guestId uint32
 
+func (id *guestId) Scan(src interface{}) error {
+	n, ok := src.(int64)
+	if !ok {
+		b, _ := src.([]byte)
+		err := errors.New(
+			fmt.Sprintf("can't scan guestId from db: %s", string(b)),
+		)
+		glog.Error(err)
+		return err
+	}
+	*id = guestId(n)
+	return nil
+}
+
+func (id guestId) Value() (driver.Value, error) {
+	return driver.Value(int64(id)), nil
+}
+
 func (id guestId) String() string {
 	return fmt.Sprintf("guestId:%d", id)
 }

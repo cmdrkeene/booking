@@ -12,8 +12,6 @@ func TestCalendar(t *testing.T) {
 	cal.DB = testDB()
 	defer cal.DB.Close()
 
-	cal.Init()
-
 	dates, err := cal.List()
 	if err != nil {
 		t.Error(err)
