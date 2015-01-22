@@ -5,6 +5,8 @@ import (
 	"database/sql/driver"
 	"errors"
 	"fmt"
+	"log"
+	"strconv"
 
 	"github.com/golang/glog"
 )
@@ -24,6 +26,10 @@ type memo string
 type rate struct {
 	Name   string
 	Amount amount
+}
+
+func (r rate) String() string {
+	return fmt.Sprintf("rate: %s (%s)", r.Name, r.Amount.String())
 }
 
 func (r *rate) Scan(src interface{}) error {
@@ -55,17 +61,48 @@ func (r rate) Value() (driver.Value, error) {
 
 // What we charge for the place
 var (
-	withBunny    = rate{Name: "With Bunny", Amount: amount(20000)}
-	withoutBunny = rate{Name: "Without Bunny", Amount: amount(25000)}
-	allRates     = []rate{withBunny, withoutBunny}
+	withBunny = rate{
+		Amount: amount(20000),
+		Name:   "With Bunny",
+	}
+	withoutBunny = rate{
+		Amount: amount(25000),
+		Name:   "Without Bunny",
+	}
+	allRates = []rate{withBunny, withoutBunny}
 )
 
 // See: http://www.regular-expressions.info/creditcard.html
 type creditCard struct {
-	CVC    string
+	CVC    int
 	Month  int
 	Number int
 	Year   int
+}
+
+func newCreditCard(cvc, month, number, year string) (creditCard, error) {
+	c, err := strconv.Atoi(cvc)
+	if err != nil {
+		return creditCard{}, err
+	}
+	m, err := strconv.Atoi(month)
+	if err != nil {
+		return creditCard{}, err
+	}
+	n, err := strconv.Atoi(number)
+	if err != nil {
+		return creditCard{}, err
+	}
+	y, err := strconv.Atoi(year)
+	if err != nil {
+		return creditCard{}, err
+	}
+	return creditCard{
+		CVC:    c,
+		Month:  m,
+		Number: n,
+		Year:   y,
+	}, nil
 }
 
 // Summary of guest accounts
@@ -86,6 +123,12 @@ func (l *Ledger) Credit(guestId, amount, memo) error {
 	return nil
 }
 
-func (l *Ledger) Charge(guestId, amount, creditCard, memo) error {
+func (l *Ledger) Charge(
+	guest guestId,
+	amount amount,
+	card creditCard,
+	memo memo,
+) error {
+	log.Println("charged", guest, amount, "on", card)
 	return nil
 }

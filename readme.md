@@ -1,59 +1,23 @@
 # Booking
 
+A playground app that implements an apartment booking application.
+
+The goal is to explore new techniques for building rich applications in [Golang](http://golang.org).
+
+## Setup
+
+    $ go version
+    go version go1.4.1 darwin/amd64
+    $ go get ./...
+
 ## Testing
 
-    $ brew install entr
+Use the standard `go test ./...` tool, or even better:
+
     $ ./autotest.sh
 
-## OLD
+## TODO
 
-* TODO workflow to offer aparment swap
-* TODO admin workflow
-
-As an admin,
-
-- mark dates as available, unavailable
-- view any offers
-- accept an offer (creates an availability, booking, marks offer as accepted/hidden)
-- decline an offer (deletes offer, sends decline email)
-
-As a guest
-
-- submit an offer
-- make a booking (pay for it too)
-
-## Domain
-
-Workflow - a coordinator that requires payment for bookings
-
-Guestbook
-\_Guest - a record of a person staying at the hotel
-
-Reservation - manages inventory (room(s) on dates)
-\_Calendar - a master record of available/confirmed dates
-\_Booking - a record of guest's payment for dates
-
-Billing - manages bookeeping, credit cards
-\_CreditCard - unsaved raw card information
-\_Ledger - credits and debits for a guest's account
-\_Processor - entity that manages credit cards
-\_PaymentToken - persisted credit card proxy
-
-## Flow
-
-    register
-    - send email to guest
-    reserve
-    - mark dateRange as reserved
-    - send email to manager
-    pay
-    - convert card to payment token
-    - save payment token in guestbook
-    - show cost before capture
-    - perform capture
-    - credit ledger with cost
-    - debit cost from ledger
-    confirm
-    - mark dateRange as booked
-    - send email to guest
-    - send email to manager
+* Finish one-step booking form
+* Web interface to cancel
+* Send email on book and cancel to admin and guest

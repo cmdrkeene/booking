@@ -9,9 +9,9 @@ To make a booking
 
 * Guest must be registered
 
-* CheckIn must be before CheckOut
+* Checkin must be before Checkout
 
-* CheckOut must be at least one day after CheckIn
+* Checkout must be at least one day after Checkin
 
 * Rate must be debited from ledger
 

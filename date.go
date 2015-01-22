@@ -9,14 +9,30 @@ import (
 	"github.com/golang/glog"
 )
 
-// Simple date
+const (
+	day         = 24 * time.Hour
+	iso8601Date = "2006-01-02"
+)
+
+// Make working with dates easier than time.Time
 type date struct {
 	t time.Time
 }
 
-const iso8601Date = "2006-01-02"
+func newDate(year, month, day int) date {
+	return date{
+		t: time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC),
+	}
+}
 
-var day = 24 * time.Hour
+func newDateFromString(s string) (date, error) {
+	t, err := time.Parse(iso8601Date, s)
+	if err != nil {
+		return date{}, err
+	}
+
+	return newDate(t.Year(), int(t.Month()), t.Day()), nil
+}
 
 func (d date) Add(n int) date {
 	return date{
@@ -61,10 +77,4 @@ func (d *date) Scan(src interface{}) error {
 
 func (d date) Value() (driver.Value, error) {
 	return driver.Value(d.t), nil
-}
-
-func newDate(year, month, day int) date {
-	return date{
-		t: time.Date(year, time.Month(month), day, 0, 0, 0, 0, time.UTC),
-	}
 }

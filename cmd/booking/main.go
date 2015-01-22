@@ -24,6 +24,7 @@ func main() {
 
 	// Domain
 	var calendar booking.Calendar
+	var form booking.Form
 	var guestbook booking.Guestbook
 	var ledger booking.Ledger
 	var register booking.Register
@@ -34,6 +35,7 @@ func main() {
 	err = g.Provide(
 		&inject.Object{Value: db},
 		&inject.Object{Value: &calendar},
+		&inject.Object{Value: &form},
 		&inject.Object{Value: &guestbook},
 		&inject.Object{Value: &ledger},
 		&inject.Object{Value: &register},

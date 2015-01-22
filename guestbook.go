@@ -120,6 +120,8 @@ func (g *Guestbook) Lookup(byId guestId) (guest, error) {
 
 // If email already registered, return existing record
 // If someone wants to sign someone else up and pay, fine
+// It could be confusing to call this Register() as there is a noun
+// Register already.
 func (g *Guestbook) Register(
 	name name,
 	email email,

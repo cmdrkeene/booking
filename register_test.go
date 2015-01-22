@@ -65,8 +65,8 @@ func TestRegister(t *testing.T) {
 	}
 	want := []booking{
 		booking{
-			CheckIn:  newDate(2015, 1, 2),
-			CheckOut: newDate(2015, 1, 5),
+			Checkin:  newDate(2015, 1, 2),
+			Checkout: newDate(2015, 1, 5),
 			GuestId:  guestId(123),
 			Id:       id,
 			Rate:     withBunny,

@@ -16,8 +16,8 @@ func (id bookingId) String() string {
 }
 
 type booking struct {
-	CheckIn  date
-	CheckOut date
+	Checkin  date
+	Checkout date
 	GuestId  guestId
 	Id       bookingId
 	Rate     rate
@@ -41,8 +41,8 @@ func (r *Register) createTableOnce() {
 
 	_, err := r.DB.Exec(
 		`create table Register (
-      CheckIn datetime not null,
-      CheckOut datetime not null,
+      Checkin datetime not null,
+      Checkout datetime not null,
       GuestId integer not null,
       Id integer primary key autoincrement not null,
       Rate text not null
@@ -96,7 +96,7 @@ func (r *Register) Book(
 	if r.book == nil {
 		var err error
 		r.book, err = r.DB.Prepare(`
-      insert into Register (CheckIn, CheckOut, GuestId, Rate)
+      insert into Register (Checkin, Checkout, GuestId, Rate)
       values ($1, $2, $3, $4)
     `)
 		if err != nil {
@@ -145,7 +145,7 @@ func (r *Register) List() ([]booking, error) {
 	if r.list == nil {
 		var err error
 		r.list, err = r.DB.Prepare(`
-      select CheckIn, CheckOut, GuestId, Id, Rate
+      select Checkin, Checkout, GuestId, Id, Rate
       from Register
       order by CheckIn asc
     `)
@@ -163,15 +163,15 @@ func (r *Register) List() ([]booking, error) {
 
 	var list []booking
 	for rows.Next() {
-		var checkIn date
-		var checkOut date
+		var checkin date
+		var checkout date
 		var guestId guestId
 		var id bookingId
 		var rate rate
 
 		err := rows.Scan(
-			&checkIn,
-			&checkOut,
+			&checkin,
+			&checkout,
 			&guestId,
 			&id,
 			&rate,
@@ -182,8 +182,8 @@ func (r *Register) List() ([]booking, error) {
 		}
 
 		list = append(list, booking{
-			CheckIn:  checkIn,
-			CheckOut: checkOut,
+			Checkin:  checkin,
+			Checkout: checkout,
 			GuestId:  guestId,
 			Id:       id,
 			Rate:     rate,

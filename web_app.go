@@ -6,33 +6,118 @@ import (
 	"github.com/golang/glog"
 )
 
-// Register, Book, and Charge in one step from raw input
+// Register, Charge, and Book in one step from raw input
 type Form struct {
 	Guestbook *Guestbook `inject:""`
 	Ledger    *Ledger    `inject:""`
 	Register  *Register  `inject:""`
 }
 
-func (f *Form) Submit(FormFields) (bookingId, error) {
-	return 0, nil
+func (form *Form) Submit(r *http.Request) (bookingId, []error) {
+	// fields
+	fields, errs := newFormFields(r)
+	if len(errs) > 0 {
+		return 0, errs
+	}
+
+	// register
+	guestId, err := form.Guestbook.Register(
+		fields.Name,
+		fields.Email,
+		fields.Phone,
+	)
+
+	if err != nil {
+		glog.Error(err)
+		return 0, []error{err}
+	}
+
+	// charge
+	memo := memo(fields.Rate.String())
+	err = form.Ledger.Charge(
+		guestId,
+		fields.Rate.Amount,
+		fields.Card,
+		memo,
+	)
+	if err != nil {
+		glog.Error(err)
+		return 0, []error{err}
+	}
+
+	// book
+	bookingId, err := form.Register.Book(
+		fields.Checkin,
+		fields.Checkout,
+		guestId,
+		fields.Rate,
+	)
+	if err != nil {
+		glog.Error(err)
+		return 0, []error{err}
+	}
+
+	return bookingId, []error{}
 }
 
-// A bucket for raw user input
-type FormFields struct {
-	Name             string
-	Email            string
-	Phone            string
-	CheckIn          string
-	CheckOut         string
-	CreditCardNumber string
-	CreditCardMonth  string
-	CreditCardYear   string
-	CreditCardCVC    string
+// helper to bucket form fields
+type formFields struct {
+	Checkin  date
+	Checkout date
+	Card     creditCard
+	Email    email
+	Name     name
+	Phone    phoneNumber
+	Rate     rate
 }
 
-// Check input and return any errors
-func (f *FormFields) Validate() []error {
-	return []error{}
+// Convert an http.Request to useful value
+func newFormFields(r *http.Request) (formFields, []error) {
+	errs := []error{}
+
+	var err error
+	var fields formFields
+
+	fields.Card, err = newCreditCard(
+		r.FormValue("card_cvc"),
+		r.FormValue("card_month"),
+		r.FormValue("card_number"),
+		r.FormValue("card_year"),
+	)
+	if err != nil {
+		errs = append(errs, err)
+	}
+
+	fields.Checkin, err = newDateFromString(r.FormValue("checkin"))
+	if err != nil {
+		errs = append(errs, err)
+	}
+
+	fields.Checkout, err = newDateFromString(r.FormValue("checkout"))
+	if err != nil {
+		errs = append(errs, err)
+	}
+
+	fields.Email, err = newEmail(r.FormValue("email"))
+	if err != nil {
+		errs = append(errs, err)
+	}
+
+	fields.Name, err = newName(r.FormValue("name"))
+	if err != nil {
+		errs = append(errs, err)
+	}
+
+	fields.Phone, err = newPhoneNumber(r.FormValue("phone"))
+	if err != nil {
+		errs = append(errs, err)
+	}
+
+	if len(errs) != 0 {
+		return formFields{}, errs
+	}
+
+	return fields, []error{}
 }
 
 // Handle HTTP interaction with Form
