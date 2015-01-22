@@ -1,7 +1,9 @@
 package booking
 
 import (
+	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/golang/glog"
 )
@@ -26,7 +28,6 @@ func (form *Form) Submit(r *http.Request) (bookingId, []error) {
 		fields.Email,
 		fields.Phone,
 	)
-
 	if err != nil {
 		glog.Error(err)
 		return 0, []error{err}
@@ -134,6 +135,21 @@ func (c *Controller) Get(w http.ResponseWriter, r *http.Request) {
 // Submit form and display errors or confirmation page
 func (c *Controller) Post(w http.ResponseWriter, r *http.Request) {
 	glog.Infoln("POST", r.RequestURI)
+
+	bookingId, errors := c.Form.Submit(r)
+	if len(errors) > 0 {
+		var errorMessages []string
+		for _, err := range errors {
+			errorMessages = append(errorMessages, err.Error())
+		}
+		s := strings.Join(errorMessages, ", ")
+		http.Error(w, s, http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	message := fmt.Sprintf("success! booking confirmation id %d", bookingId)
+	w.Write([]byte(message))
 }
 
 // Serve Controller
