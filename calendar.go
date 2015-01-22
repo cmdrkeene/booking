@@ -18,28 +18,28 @@ type Calendar struct {
 func (c *Calendar) Init() {
 	// create table
 	_, err := c.DB.Exec(`
-    create table calendar (
-      date datetime
+    create table Calendar (
+      Date datetime not null
     )
   `)
 	if err == nil {
-		glog.Info("calendar table created")
+		glog.Info("Calendar table created")
 	} else {
 		glog.Warning(err)
 	}
 
 	// setup prepated statements
-	c.add, err = c.DB.Prepare(`insert into calendar (date) values ($1)`)
+	c.add, err = c.DB.Prepare(`insert into Calendar (Date) values ($1)`)
 	if err != nil {
 		panic(err)
 	}
 
-	c.list, err = c.DB.Prepare(`select date from calendar`)
+	c.list, err = c.DB.Prepare(`select Date from Calendar`)
 	if err != nil {
 		panic(err)
 	}
 
-	c.remove, err = c.DB.Prepare(`delete from calendar where date=$1`)
+	c.remove, err = c.DB.Prepare(`delete from Calendar where Date=$1`)
 	if err != nil {
 		panic(err)
 	}

@@ -1,7 +1,6 @@
 package booking
 
 import (
-	"database/sql"
 	"reflect"
 	"testing"
 
@@ -50,12 +49,4 @@ func TestCalendar(t *testing.T) {
 		t.Error("want", list)
 		t.Error("got ", dates)
 	}
-}
-
-func testDB() *sql.DB {
-	db, err := sql.Open("sqlite3", ":memory:")
-	if err != nil {
-		panic(err)
-	}
-	return db
 }
