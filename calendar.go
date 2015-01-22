@@ -53,6 +53,34 @@ func (c *Calendar) Add(dates ...date) error {
 	return nil
 }
 
+func (c *Calendar) Available(start, stop date) (bool, error) {
+	list, err := c.List()
+	if err != nil {
+		return false, err
+	}
+
+	var include = func(l []date, current date) bool {
+		for _, d := range l {
+			if d == current {
+				return true
+			}
+		}
+		return false
+	}
+
+	daysApart := start.DaysApart(stop)
+	glog.Warningln("daysApart", daysApart)
+	for i := 0; i <= daysApart; i++ {
+		current := start.Add(i)
+		glog.Warningln("current", current)
+		if !include(list, current) {
+			return false, unavailable
+		}
+	}
+
+	return true, nil
+}
+
 func (c *Calendar) List() ([]date, error) {
 	c.createTableOnce()
 

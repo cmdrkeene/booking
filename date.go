@@ -16,6 +16,32 @@ type date struct {
 
 const iso8601Date = "2006-01-02"
 
+var day = 24 * time.Hour
+
+func (d date) Add(n int) date {
+	return date{
+		d.t.Add(time.Duration(n) * day),
+	}
+}
+
+func (d date) After(u date) bool {
+	return d.t.After(u.t)
+}
+
+func (d date) DaysApart(u date) int {
+	duration := d.t.Sub(u.t)
+
+	// Didn't seem to be a stdlib way to do this
+	var abs = func(x int) int {
+		if x < 0 {
+			return -x
+		}
+		return x
+	}
+
+	return abs(int(duration.Hours() / 24))
+}
+
 func (d date) String() string {
 	return d.t.Format(iso8601Date)
 }

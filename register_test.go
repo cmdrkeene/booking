@@ -13,7 +13,37 @@ func TestRegister(t *testing.T) {
 	register.Calendar = &calendar
 	defer register.DB.Close()
 
-	// book
+	// book -> checkInAfterOut
+	_, err := register.Book(
+		newDate(2015, 1, 5),
+		newDate(2015, 1, 2),
+		guestId(123),
+		withBunny,
+	)
+	if err != checkInAfterOut {
+		t.Error("want", checkInAfterOut)
+		t.Error("got ", err)
+	}
+
+	// book -> stayTooShort
+	_, err = register.Book(
+		newDate(2015, 1, 2),
+		newDate(2015, 1, 2),
+		guestId(123),
+		withBunny,
+	)
+	if err != stayTooShort {
+		t.Error("want", stayTooShort)
+		t.Error("got ", err)
+	}
+
+	// book -> ok
+	register.Calendar.Add(
+		newDate(2015, 1, 2),
+		newDate(2015, 1, 3),
+		newDate(2015, 1, 4),
+		newDate(2015, 1, 5),
+	)
 	id, err := register.Book(
 		newDate(2015, 1, 2),
 		newDate(2015, 1, 5),

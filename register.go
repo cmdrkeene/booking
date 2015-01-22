@@ -2,6 +2,7 @@ package booking
 
 import (
 	"database/sql"
+	"errors"
 
 	"github.com/golang/glog"
 )
@@ -50,6 +51,13 @@ func (r *Register) createTableOnce() {
 	}
 }
 
+var (
+	checkInAfterOut = errors.New("check in can't be after check out")
+	stayTooShort    = errors.New("your stay is too short")
+	unavailable     = errors.New("unavailable")
+	minimumStay     = 1 // day
+)
+
 func (r *Register) Book(
 	checkIn date,
 	checkOut date,
@@ -57,8 +65,29 @@ func (r *Register) Book(
 	rate rate,
 ) (bookingId, error) {
 	r.createTableOnce()
+
+	// check in can't be after check out
+	if checkIn.After(checkOut) {
+		return 0, checkInAfterOut
+	}
+
+	// minimum stay length
+	if checkIn.DaysApart(checkOut) < minimumStay {
+		return 0, stayTooShort
+	}
+
+	// ensure on availablity calendar
+	available, err := r.Calendar.Available(checkIn, checkOut)
+	if err != nil {
+		glog.Error(err)
+		return 0, err
+	}
+	if !available {
+		return 0, unavailable
+	}
+
 	// TODO ensure can't be overbooked
-	// TODO ensure on availablity calendar
+
 	if r.book == nil {
 		var err error
 		r.book, err = r.DB.Prepare(`
