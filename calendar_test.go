@@ -45,10 +45,10 @@ func TestCalendar(t *testing.T) {
 		stop  date
 		ok    bool
 	}{
-		// {newDate(2014, 1, 1), newDate(2014, 1, 1), true},
-		// {newDate(2014, 1, 1), newDate(2014, 1, 2), true},
+		{newDate(2014, 1, 1), newDate(2014, 1, 1), true},
+		{newDate(2014, 1, 1), newDate(2014, 1, 2), true},
 		{newDate(2014, 1, 1), newDate(2014, 1, 3), false},
-		// {newDate(2013, 12, 31), newDate(2014, 1, 2), false},
+		{newDate(2013, 12, 31), newDate(2014, 1, 2), false},
 	}
 	for _, tt := range rangeTests {
 		if ok, _ := cal.Available(tt.start, tt.stop); ok != tt.ok {
