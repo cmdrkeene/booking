@@ -14,8 +14,7 @@ type Form struct {
 }
 
 func (f *Form) Submit(FormFields) (bookingId, error) {
-	// TODO maybe use bookingFormSubmission to validate and aggregate errors
-	return bookingId(0), nil
+	return 0, nil
 }
 
 // A bucket for raw user input

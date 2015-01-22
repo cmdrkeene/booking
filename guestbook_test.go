@@ -3,14 +3,18 @@ package booking
 import (
 	"reflect"
 	"testing"
+
+	"github.com/facebookgo/inject"
 )
 
 func TestGuestbook(t *testing.T) {
+	db := testDB()
+	defer db.Close()
 	var guestbook Guestbook
-	guestbook.DB = testDB()
-	defer guestbook.DB.Close()
-
-	var err error
+	err := inject.Populate(db, &guestbook)
+	if err != nil {
+		t.Error(err)
+	}
 
 	// Lookup -> guestNotFound
 	_, err = guestbook.Lookup(guestId(1))

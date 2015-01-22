@@ -3,18 +3,22 @@ package booking
 import (
 	"reflect"
 	"testing"
+
+	"github.com/facebookgo/inject"
 )
 
 func TestRegister(t *testing.T) {
+	db := testDB()
+	defer db.Close()
 	var register Register
-	register.DB = testDB()
 	var calendar Calendar
-	calendar.DB = register.DB
-	register.Calendar = &calendar
-	defer register.DB.Close()
+	err := inject.Populate(db, &register, &calendar)
+	if err != nil {
+		t.Error(err)
+	}
 
 	// book -> checkInAfterOut
-	_, err := register.Book(
+	_, err = register.Book(
 		newDate(2015, 1, 5),
 		newDate(2015, 1, 2),
 		guestId(123),

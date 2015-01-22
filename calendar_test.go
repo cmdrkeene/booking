@@ -4,13 +4,18 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/facebookgo/inject"
 	_ "github.com/mattn/go-sqlite3"
 )
 
 func TestCalendar(t *testing.T) {
+	db := testDB()
+	defer db.Close()
 	var cal Calendar
-	cal.DB = testDB()
-	defer cal.DB.Close()
+	err := inject.Populate(db, &cal)
+	if err != nil {
+		t.Error(err)
+	}
 
 	// List() -> []
 	dates, err := cal.List()
