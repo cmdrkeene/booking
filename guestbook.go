@@ -11,7 +11,7 @@ import (
 )
 
 // Locator for a guest record
-type guestId uint32
+type guestId uint8
 
 func (id *guestId) Scan(src interface{}) error {
 	n, ok := src.(int64)

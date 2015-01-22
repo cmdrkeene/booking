@@ -3,12 +3,17 @@ package booking
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 
 	"github.com/golang/glog"
 )
 
 // Locator for a booking record
-type bookingId uint32
+type bookingId uint8
+
+func (id bookingId) String() string {
+	return fmt.Sprintf("bookingId:%d", id)
+}
 
 type booking struct {
 	CheckIn  date
@@ -36,10 +41,10 @@ func (r *Register) createTableOnce() {
 
 	_, err := r.DB.Exec(
 		`create table Register (
-      CheckIn datetime not null, 
-      CheckOut datetime not null, 
-      GuestId integer not null, 
-      Id integer primary key autoincrement not null, 
+      CheckIn datetime not null,
+      CheckOut datetime not null,
+      GuestId integer not null,
+      Id integer primary key autoincrement not null,
       Rate text not null
     )`,
 	)
