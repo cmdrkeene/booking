@@ -88,17 +88,17 @@ func (g *Guestbook) Lookup(byId guestId) (guest, error) {
 		}
 	}
 
-	var row_email string
-	var row_id int
-	var row_name string
-	var row_phone_number string
+	var id guestId
+	var name name
+	var email email
+	var phone phoneNumber
 
 	row := g.lookup.QueryRow(byId)
 	err := row.Scan(
-		&row_email,
-		&row_id,
-		&row_name,
-		&row_phone_number,
+		&email,
+		&id,
+		&name,
+		&phone,
 	)
 
 	if err == sql.ErrNoRows {
@@ -110,29 +110,19 @@ func (g *Guestbook) Lookup(byId guestId) (guest, error) {
 		return guest{}, err
 	}
 
-	var email email
-	if !email.Set(row_email) {
-		return guest{}, err
-	}
-
-	var name name
-	if !name.Set(row_name) {
-		return guest{}, nil
-	}
-
 	return guest{
 		Email:       email,
-		Id:          guestId(row_id),
+		Id:          id,
 		Name:        name,
-		PhoneNumber: phoneNumber(row_phone_number),
+		PhoneNumber: phone,
 	}, nil
 }
 
 // If email already registered, return existing record
 // If someone wants to sign someone else up and pay, fine
 func (g *Guestbook) Register(
-	name *name,
-	email *email,
+	name name,
+	email email,
 	phone phoneNumber,
 ) (guestId, error) {
 	g.createTableOnce()
@@ -148,7 +138,7 @@ func (g *Guestbook) Register(
 		}
 	}
 
-	result, err := g.register.Exec(email.s, name, phone)
+	result, err := g.register.Exec(email, name, phone)
 	if err != nil {
 		glog.Error(err)
 		return 0, err
@@ -168,22 +158,41 @@ type name struct {
 	s string
 }
 
-func (n *name) Value() (driver.Value, error) {
+var invalidName = errors.New("invalid guest name")
+
+func newName(s string) (name, error) {
+	fields := strings.Fields(s)
+	if len(fields) < 2 {
+		return name{}, invalidName
+	}
+
+	return name{s: strings.Join(fields, " ")}, nil
+}
+
+func (n *name) Scan(src interface{}) error {
+	b, ok := src.([]byte)
+	if !ok {
+		err := errors.New(
+			fmt.Sprintf("can't scan name from %#v", src),
+		)
+		glog.Error(err)
+		return err
+	}
+
+	name, err := newName(string(b))
+	if err != nil {
+		return err
+	}
+	n.s = name.s
+	return nil
+}
+
+func (n name) Value() (driver.Value, error) {
 	return driver.Value(n.s), nil
 }
 
-func (n *name) Equal(s string) bool {
+func (n name) Equal(s string) bool {
 	return n.s == s
-}
-
-func (n *name) Set(s string) bool {
-	fields := strings.Fields(s)
-	if len(fields) < 2 {
-		return false
-	}
-
-	n.s = strings.Join(fields, " ")
-	return true
 }
 
 // An electronic mail address
@@ -191,32 +200,76 @@ type email struct {
 	s string
 }
 
-func (e *email) Value() (driver.Value, error) {
-	return driver.Value(e.s), nil
-}
+var invalidEmail = errors.New("invalid email")
 
-func (e *email) Equal(s string) bool {
-	return e.s == s
-}
-
-func (e *email) Set(s string) bool {
+func newEmail(s string) (email, error) {
 	s = strings.Trim(s, " ")
 
 	if len(s) < 3 {
-		return false
+		return email{}, invalidEmail
 	}
 
 	if !strings.Contains(s, "@") {
-		return false
+		return email{}, invalidEmail
 	}
 
-	e.s = s
-	return true
+	return email{s: s}, nil
+}
+
+func (e *email) Scan(src interface{}) error {
+	b, ok := src.([]byte)
+	if !ok {
+		err := errors.New(
+			fmt.Sprintf("can't scan email from %#v", src),
+		)
+		glog.Error(err)
+		return err
+	}
+
+	email, err := newEmail(string(b))
+	if err != nil {
+		return err
+	}
+	e.s = email.s
+	return nil
+}
+
+func (e email) Value() (driver.Value, error) {
+	return driver.Value(e.s), nil
+}
+
+func (e email) Equal(s string) bool {
+	return e.s == s
 }
 
 // A telephone number
-type phoneNumber string
+type phoneNumber struct {
+	s string
+}
+
+// TODO validate, maybe libphonenumber?
+func newPhoneNumber(s string) (phoneNumber, error) {
+	return phoneNumber{s: s}, nil
+}
+
+func (p *phoneNumber) Scan(src interface{}) error {
+	b, ok := src.([]byte)
+	if !ok {
+		err := errors.New(
+			fmt.Sprintf("can't scan phoneNumber from %#v", src),
+		)
+		glog.Error(err)
+		return err
+	}
+
+	phone, err := newPhoneNumber(string(b))
+	if err != nil {
+		return err
+	}
+	p.s = phone.s
+	return nil
+}
 
 func (p phoneNumber) Value() (driver.Value, error) {
-	return driver.Value(string(p)), nil
+	return driver.Value(p.s), nil
 }

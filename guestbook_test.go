@@ -20,15 +20,10 @@ func TestGuestbook(t *testing.T) {
 	}
 
 	// Register -> ok
-	var name name
-	name.Set("B K")
-
-	var email email
-	email.Set("a@b.com")
-
-	phoneNumber := phoneNumber("555-111-2222")
-
-	id, err := guestbook.Register(&name, &email, phoneNumber)
+	name, _ := newName("B K")
+	email, _ := newEmail("a@b.com")
+	phoneNumber, _ := newPhoneNumber("555-111-2222")
+	id, err := guestbook.Register(name, email, phoneNumber)
 	if err != nil {
 		t.Error(err)
 	}
@@ -72,27 +67,26 @@ func TestEmail(t *testing.T) {
 	var tests = []struct {
 		input  string
 		output string
-		ok     bool
+		err    error
 	}{
-		{"", "", false},
-		{" ", "", false},
-		{"a", "", false},
-		{"@", "", false},
-		{"a@", "", false},
-		{"@b", "", false},
-		{"a@b", "a@b", true},
-		{" a@b", "a@b", true},
-		{"a@b ", "a@b", true},
-		{" a@b ", "a@b", true},
-		{"user@example.com", "user@example.com", true},
+		{"", "", invalidEmail},
+		{" ", "", invalidEmail},
+		{"a", "", invalidEmail},
+		{"@", "", invalidEmail},
+		{"a@", "", invalidEmail},
+		{"@b", "", invalidEmail},
+		{"a@b", "a@b", nil},
+		{" a@b", "a@b", nil},
+		{"a@b ", "a@b", nil},
+		{" a@b ", "a@b", nil},
+		{"user@example.com", "user@example.com", nil},
 	}
 
 	for _, tt := range tests {
-		var email email
-
-		if ok := email.Set(tt.input); ok != tt.ok {
-			t.Error("want", tt.ok)
-			t.Error("got ", ok)
+		email, err := newEmail(tt.input)
+		if err != tt.err {
+			t.Error("want", tt.err)
+			t.Error("got ", err)
 			continue
 		}
 
@@ -103,25 +97,25 @@ func TestEmail(t *testing.T) {
 	}
 }
 
-func TestUserName(t *testing.T) {
+func TestGuestName(t *testing.T) {
 	var tests = []struct {
 		input  string
 		output string
-		ok     bool
+		err    error
 	}{
-		{"", "", false},
-		{" ", "", false},
-		{"B", "", false},
-		{"B K", "B K", true},
-		{" B K ", "B K", true},
+		{"", "", invalidName},
+		{" ", "", invalidName},
+		{"B", "", invalidName},
+		{"B K", "B K", nil},
+		{" B K ", "B K", nil},
+		{"Brandon Allen Keene", "Brandon Allen Keene", nil},
 	}
 
 	for _, tt := range tests {
-		var name name
-
-		if ok := name.Set(tt.input); ok != tt.ok {
-			t.Error("want", tt.ok)
-			t.Error("got ", ok)
+		name, err := newName(tt.input)
+		if tt.err != err {
+			t.Error("want", tt.err)
+			t.Error("got ", err)
 			continue
 		}
 
