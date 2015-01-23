@@ -1,0 +1,25 @@
+{
+	"ImportPath": "github.com/cmdrkeene/booking",
+	"GoVersion": "go1.4.1",
+	"Packages": [
+		"."
+	],
+	"Deps": [
+		{
+			"ImportPath": "github.com/facebookgo/inject",
+			"Rev": "507e9fce727a03923f32aa45b9f732aac9934c24"
+		},
+		{
+			"ImportPath": "github.com/facebookgo/structtag",
+			"Rev": "f6ee7189073e07ee64831a52e02e2b6e9bb91adf"
+		},
+		{
+			"ImportPath": "github.com/golang/glog",
+			"Rev": "d1c4472bf2efd3826f2b5bdcc02d8416798d678c"
+		},
+		{
+			"ImportPath": "github.com/mattn/go-sqlite3",
+			"Rev": "d8029554b4cbb9a1c12311d307f4154b515566b4"
+		}
+	]
+}
