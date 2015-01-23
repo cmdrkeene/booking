@@ -25,10 +25,16 @@ func newDate(year, month, day int) date {
 	}
 }
 
+var invalidDate = errors.New("invalid date")
+
 func newDateFromString(s string) (date, error) {
+	if s == "" {
+		return date{}, invalidDate
+	}
+
 	t, err := time.Parse(iso8601Date, s)
 	if err != nil {
-		return date{}, err
+		return date{}, invalidDate
 	}
 
 	return newDate(t.Year(), int(t.Month()), t.Day()), nil

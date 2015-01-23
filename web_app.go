@@ -72,6 +72,18 @@ type formFields struct {
 	Rate     rate
 }
 
+const (
+	formKeyCardCVC    = "card_cvc"
+	formKeyCardMonth  = "card_month"
+	formKeyCardNumber = "card_number"
+	formKeyCardYear   = "card_year"
+	formKeyCheckin    = "checkin"
+	formKeyCheckout   = "checkout"
+	formKeyEmail      = "email"
+	formKeyName       = "name"
+	formKeyPhone      = "phone"
+)
+
 // Convert an http.Request to useful value
 func newFormFields(r *http.Request) (formFields, []error) {
 	errs := []error{}
@@ -80,36 +92,36 @@ func newFormFields(r *http.Request) (formFields, []error) {
 	var fields formFields
 
 	fields.Card, err = newCreditCard(
-		r.FormValue("card_cvc"),
-		r.FormValue("card_month"),
-		r.FormValue("card_number"),
-		r.FormValue("card_year"),
+		r.FormValue(formKeyCardCVC),
+		r.FormValue(formKeyCardMonth),
+		r.FormValue(formKeyCardNumber),
+		r.FormValue(formKeyCardYear),
 	)
 	if err != nil {
 		errs = append(errs, err)
 	}
 
-	fields.Checkin, err = newDateFromString(r.FormValue("checkin"))
+	fields.Checkin, err = newDateFromString(r.FormValue(formKeyCheckin))
 	if err != nil {
 		errs = append(errs, err)
 	}
 
-	fields.Checkout, err = newDateFromString(r.FormValue("checkout"))
+	fields.Checkout, err = newDateFromString(r.FormValue(formKeyCheckout))
 	if err != nil {
 		errs = append(errs, err)
 	}
 
-	fields.Email, err = newEmail(r.FormValue("email"))
+	fields.Email, err = newEmail(r.FormValue(formKeyEmail))
 	if err != nil {
 		errs = append(errs, err)
 	}
 
-	fields.Name, err = newName(r.FormValue("name"))
+	fields.Name, err = newName(r.FormValue(formKeyName))
 	if err != nil {
 		errs = append(errs, err)
 	}
 
-	fields.Phone, err = newPhoneNumber(r.FormValue("phone"))
+	fields.Phone, err = newPhoneNumber(r.FormValue(formKeyPhone))
 	if err != nil {
 		errs = append(errs, err)
 	}

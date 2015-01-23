@@ -1,6 +1,32 @@
 package booking
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+)
+
+func TestNewDateFromString(t *testing.T) {
+	var tests = []struct {
+		input string
+		err   error
+		date  date
+	}{
+		{"", invalidDate, date{}},
+		{"2015-01-02", nil, newDate(2015, 1, 2)},
+	}
+
+	for _, tt := range tests {
+		date, err := newDateFromString(tt.input)
+		if tt.err != err {
+			t.Error("want", tt.err)
+			t.Error("got ", err)
+		}
+		if !reflect.DeepEqual(tt.date, date) {
+			t.Error("want", tt.date)
+			t.Error("got ", date)
+		}
+	}
+}
 
 func TestDateDaysApart(t *testing.T) {
 	var tests = []struct {

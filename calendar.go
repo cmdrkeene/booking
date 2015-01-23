@@ -69,10 +69,8 @@ func (c *Calendar) Available(start, stop date) (bool, error) {
 	}
 
 	daysApart := start.DaysApart(stop)
-	glog.Warningln("daysApart", daysApart)
 	for i := 0; i <= daysApart; i++ {
 		current := start.Add(i)
-		glog.Warningln("current", current)
 		if !include(list, current) {
 			return false, unavailable
 		}
