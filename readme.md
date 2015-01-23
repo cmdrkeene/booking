@@ -1,5 +1,7 @@
 # Booking
 
+![Build Status](https://travis-ci.org/cmdrkeene/booking.svg)
+
 An apartment booking service.
 
 The goal is to explore new techniques for building rich applications in
