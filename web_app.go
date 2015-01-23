@@ -2,11 +2,93 @@ package booking
 
 import (
 	"fmt"
+	"html/template"
 	"net/http"
 	"strings"
 
 	"github.com/golang/glog"
 )
+
+// Serve web application
+type Server struct {
+	Controller *Controller `inject:""`
+}
+
+func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "GET" {
+		s.Controller.Get(w, r)
+		return
+	}
+
+	if r.Method == "POST" {
+		s.Controller.Post(w, r)
+		return
+	}
+
+	http.Error(w, "Not Implemented", http.StatusNotImplemented)
+}
+
+func (s *Server) ListenAndServe(addr string) error {
+	glog.Infoln("listening on", addr)
+	return http.ListenAndServe(addr, s)
+}
+
+// Handle HTTP interaction with Form
+type Controller struct {
+	Calendar *Calendar `inject:""`
+	Form     *Form     `inject:""`
+
+	formTemplate *template.Template
+}
+
+var templateHelpers = template.FuncMap{
+	"formatDate": func(d date) string { return d.Format(layoutDatePretty) },
+}
+
+// Display form with available dates listed
+func (c *Controller) Get(w http.ResponseWriter, r *http.Request) {
+	if c.formTemplate == nil {
+		t := template.New("form.html.go")
+		t = t.Funcs(templateHelpers)
+		t, err := t.Parse(formHtml)
+		if err != nil {
+			panic(err)
+		}
+		c.formTemplate = t
+	}
+
+	available, err := c.Calendar.List()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	var page = struct {
+		AvailableDates []date
+	}{available}
+	err = c.formTemplate.Execute(w, page)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+// Submit form and display errors or confirmation page
+func (c *Controller) Post(w http.ResponseWriter, r *http.Request) {
+	bookingId, errors := c.Form.Submit(r)
+	if len(errors) > 0 {
+		var errorMessages []string
+		for _, err := range errors {
+			errorMessages = append(errorMessages, err.Error())
+		}
+		s := strings.Join(errorMessages, ", ")
+		http.Error(w, s, http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+	message := fmt.Sprintf("success! booking confirmation id %d", bookingId)
+	w.Write([]byte(message))
+}
 
 // Register, Charge, and Book in one step from raw input
 type Form struct {
@@ -131,59 +213,4 @@ func newFormFields(r *http.Request) (formFields, []error) {
 	}
 
 	return fields, []error{}
-}
-
-// Handle HTTP interaction with Form
-type Controller struct {
-	Calendar *Calendar `inject:""`
-	Form     *Form     `inject:""`
-}
-
-// Display form with available dates listed
-func (c *Controller) Get(w http.ResponseWriter, r *http.Request) {
-	glog.Infoln("GET", r.RequestURI)
-}
-
-// Submit form and display errors or confirmation page
-func (c *Controller) Post(w http.ResponseWriter, r *http.Request) {
-	glog.Infoln("POST", r.RequestURI)
-
-	bookingId, errors := c.Form.Submit(r)
-	if len(errors) > 0 {
-		var errorMessages []string
-		for _, err := range errors {
-			errorMessages = append(errorMessages, err.Error())
-		}
-		s := strings.Join(errorMessages, ", ")
-		http.Error(w, s, http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusCreated)
-	message := fmt.Sprintf("success! booking confirmation id %d", bookingId)
-	w.Write([]byte(message))
-}
-
-// Serve Controller
-type Server struct {
-	Controller *Controller `inject:""`
-}
-
-func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "GET" {
-		s.Controller.Get(w, r)
-		return
-	}
-
-	if r.Method == "POST" {
-		s.Controller.Post(w, r)
-		return
-	}
-
-	http.Error(w, "Not Implemented", http.StatusNotImplemented)
-}
-
-func (s *Server) ListenAndServe(addr string) error {
-	glog.Infoln("listening on", addr)
-	return http.ListenAndServe(addr, s)
 }

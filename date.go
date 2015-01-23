@@ -9,10 +9,7 @@ import (
 	"github.com/golang/glog"
 )
 
-const (
-	day         = 24 * time.Hour
-	iso8601Date = "2006-01-02"
-)
+const day = 24 * time.Hour
 
 // Make working with dates easier than time.Time
 type date struct {
@@ -32,7 +29,7 @@ func newDateFromString(s string) (date, error) {
 		return date{}, invalidDate
 	}
 
-	t, err := time.Parse(iso8601Date, s)
+	t, err := time.Parse(layoutDateISO8601, s)
 	if err != nil {
 		return date{}, invalidDate
 	}
@@ -64,8 +61,13 @@ func (d date) DaysApart(u date) int {
 	return abs(int(duration.Hours() / 24))
 }
 
-func (d date) String() string {
-	return d.t.Format(iso8601Date)
+const (
+	layoutDatePretty  = "January 2, 2006"
+	layoutDateISO8601 = "2006-01-02"
+)
+
+func (d date) Format(layout string) string {
+	return d.t.Format(layout)
 }
 
 func (d *date) Scan(src interface{}) error {
@@ -79,6 +81,10 @@ func (d *date) Scan(src interface{}) error {
 	}
 	d.t = t.UTC()
 	return nil
+}
+
+func (d date) String() string {
+	return d.Format(layoutDateISO8601)
 }
 
 func (d date) Value() (driver.Value, error) {

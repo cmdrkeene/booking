@@ -1,7 +1,9 @@
 package booking
 
 import (
+	"bytes"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
@@ -13,9 +15,48 @@ func TestServer(t *testing.T) {
 	// mostly routing, excercise
 }
 
-func TestController(t *testing.T) {
-	// GET
-	// POST
+func TestControllerGet(t *testing.T) {
+	db := testDB()
+	defer db.Close()
+	var calendar Calendar
+	var controller Controller
+	err := inject.Populate(
+		db,
+		&calendar,
+		&controller,
+	)
+	if err != nil {
+		t.Error(err)
+	}
+	calendar.Add(
+		newDate(2015, 1, 1),
+		newDate(2015, 1, 2),
+		newDate(2015, 1, 3),
+	)
+
+	w := httptest.NewRecorder()
+	r, err := http.NewRequest("GET", "/", nil)
+	if err != nil {
+		t.Error(err)
+	}
+	controller.Get(w, r)
+	if w.Code != http.StatusOK {
+		t.Error("want", http.StatusOK)
+		t.Error("got ", w.Code)
+	}
+
+	body := w.Body.Bytes()
+	dates := []string{
+		"2015-01-01",
+		"2015-01-02",
+		"2015-01-03",
+	}
+	for _, s := range dates {
+		if !bytes.Contains(body, []byte(s)) {
+			t.Error("want", s)
+			t.Error("got ", string(body))
+		}
+	}
 }
 
 func TestForm(t *testing.T) {
@@ -59,7 +100,10 @@ func TestForm(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded; param=value")
+	req.Header.Set(
+		"Content-Type",
+		"application/x-www-form-urlencoded; param=value",
+	)
 
 	_, errs := form.Submit(req)
 	if len(errs) > 0 {
