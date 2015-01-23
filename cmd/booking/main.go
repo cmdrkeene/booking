@@ -11,7 +11,10 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+var flagHttp = flag.String("http", ":3000", "http port")
+
 func main() {
+	flag.Set("stderrthreshold", "ERROR")
 	flag.Set("logtostderr", "true")
 	flag.Parse()
 
@@ -51,5 +54,5 @@ func main() {
 	}
 
 	// Start
-	server.ListenAndServe(":3000")
+	server.ListenAndServe(*flagHttp)
 }
