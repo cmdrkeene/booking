@@ -40,6 +40,7 @@ func TestControllerGet(t *testing.T) {
 		t.Error(err)
 	}
 	controller.Get(w, r)
+
 	if w.Code != http.StatusOK {
 		t.Error("want", http.StatusOK)
 		t.Error("got ", w.Code)

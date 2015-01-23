@@ -2,7 +2,16 @@
 
 An apartment booking service.
 
-The goal is to explore new techniques for building rich applications in [Golang](http://golang.org).
+The goal is to explore new techniques for building rich applications in
+[Golang](http://golang.org).
+
+## Dependencies
+
+These should be kept to an absolute minimum and the standard library should be
+used as much as possible.
+
+	glog
+	inject
 
 ## Setup
 

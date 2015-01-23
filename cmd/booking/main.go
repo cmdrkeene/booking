@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"flag"
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/cmdrkeene/booking"
@@ -54,5 +55,5 @@ func main() {
 	}
 
 	// Start
-	server.ListenAndServe(*flagHttp)
+	log.Fatal(server.ListenAndServe(*flagHttp))
 }

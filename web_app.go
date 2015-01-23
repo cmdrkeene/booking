@@ -1,8 +1,10 @@
 package booking
 
 import (
+	"bytes"
 	"fmt"
 	"html/template"
+
 	"net/http"
 	"strings"
 
@@ -37,8 +39,6 @@ func (s *Server) ListenAndServe(addr string) error {
 type Controller struct {
 	Calendar *Calendar `inject:""`
 	Form     *Form     `inject:""`
-
-	formTemplate *template.Template
 }
 
 var templateHelpers = template.FuncMap{
@@ -47,29 +47,22 @@ var templateHelpers = template.FuncMap{
 
 // Display form with available dates listed
 func (c *Controller) Get(w http.ResponseWriter, r *http.Request) {
-	if c.formTemplate == nil {
-		t := template.New("form.html.go")
-		t = t.Funcs(templateHelpers)
-		t, err := t.Parse(formHtml)
-		if err != nil {
-			panic(err)
-		}
-		c.formTemplate = t
-	}
+	t := template.New("form.html.go")
+	t = t.Funcs(templateHelpers)
+	t = template.Must(t.Parse(formHtml))
 
 	available, err := c.Calendar.List()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		glog.Error(err)
+		http.Error(w, err.Error(), 500)
 		return
 	}
 
-	var page = struct {
+	var data = struct {
 		AvailableDates []date
-	}{available}
-	err = c.formTemplate.Execute(w, page)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+		Rates          []rate
+	}{available, allRates}
+	c.writeTemplate(w, t, data)
 }
 
 // Submit form and display errors or confirmation page
@@ -81,13 +74,29 @@ func (c *Controller) Post(w http.ResponseWriter, r *http.Request) {
 			errorMessages = append(errorMessages, err.Error())
 		}
 		s := strings.Join(errorMessages, ", ")
-		http.Error(w, s, http.StatusInternalServerError)
+		http.Error(w, s, 500)
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
+	w.WriteHeader(201)
 	message := fmt.Sprintf("success! booking confirmation id %d", bookingId)
 	w.Write([]byte(message))
+}
+
+// buffers template Execute and returns 500 on any error
+// avoids returning 200 OK when Execute fails after starting Write()
+func (c *Controller) writeTemplate(
+	w http.ResponseWriter,
+	t *template.Template,
+	data interface{},
+) {
+	var b bytes.Buffer
+	err := t.Execute(&b, data)
+	if err != nil {
+		glog.Error(err)
+		http.Error(w, http.StatusText(500), 500)
+	}
+	b.WriteTo(w)
 }
 
 // Register, Charge, and Book in one step from raw input

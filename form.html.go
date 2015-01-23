@@ -10,7 +10,7 @@ var formHtml = `
         <legend>Dates</legend>
         {{range .AvailableDates}}
           <input type="checkbox" name="dates" value="{{ . }}" />
-          {{formatDate .}}
+          {{.}}
           <br />
         {{end}}
         </ul>
@@ -19,8 +19,8 @@ var formHtml = `
         <legend>Rate</legend>
         {{range .Rates}}
         <div>
-          <input name="rate" type="radio" value="WithBunny" />
-          <b>{{.Amount.InDollars}}</b>
+          <input name="rate" type="radio" value="{{.Name}}" />
+          <b>{{.Amount}}</b>
           {{.Name}}
         </div>
         {{end}}
