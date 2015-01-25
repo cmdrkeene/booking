@@ -5,6 +5,9 @@ go:
   - tip
 
 install:
+  - go get -v code.google.com/p/go.tools/cmd/vet
+  - go get -v github.com/golang/lint/golint
+  - go get -v code.google.com/p/go.tools/cmd/cover
   - export PATH=$PATH:$HOME/gopath/bin
   - go get -v -u github.com/kr/godep
   - godep get
@@ -12,3 +15,6 @@ install:
 script:
   - godep go test ./...
   - test -z "$(go fmt ./...)"
+  - go vet .
+  - $HOME/gopath/bin/golint .
+  - go test -cpu=2 -covermode=atomic ./...
