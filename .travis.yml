@@ -5,9 +5,9 @@ go:
   - tip
 
 install:
-  - go get -v code.google.com/p/go.tools/cmd/vet
   - go get -v github.com/golang/lint/golint
-  - go get -v code.google.com/p/go.tools/cmd/cover
+  - go get -v golang.org/x/tools/cmd/cover
+  - go get -v golang.org/x/tools/cmd/vet
   - export PATH=$PATH:$HOME/gopath/bin
   - go get -v -u github.com/kr/godep
   - godep get
