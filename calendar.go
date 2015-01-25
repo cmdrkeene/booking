@@ -3,6 +3,7 @@ package booking
 import (
 	"database/sql"
 
+	"github.com/cmdrkeene/booking/pkg/date"
 	"github.com/golang/glog"
 )
 
@@ -33,7 +34,7 @@ func (c *Calendar) createTableOnce() {
 	}
 }
 
-func (c *Calendar) Add(dates ...date) error {
+func (c *Calendar) Add(dates ...date.Date) error {
 	c.createTableOnce()
 
 	if c.add == nil {
@@ -53,13 +54,13 @@ func (c *Calendar) Add(dates ...date) error {
 	return nil
 }
 
-func (c *Calendar) Available(start, stop date) (bool, error) {
+func (c *Calendar) Available(start, stop date.Date) (bool, error) {
 	list, err := c.List()
 	if err != nil {
 		return false, err
 	}
 
-	var include = func(l []date, current date) bool {
+	var include = func(l []date.Date, current date.Date) bool {
 		for _, d := range l {
 			if d == current {
 				return true
@@ -79,7 +80,7 @@ func (c *Calendar) Available(start, stop date) (bool, error) {
 	return true, nil
 }
 
-func (c *Calendar) List() ([]date, error) {
+func (c *Calendar) List() ([]date.Date, error) {
 	c.createTableOnce()
 
 	if c.list == nil {
@@ -93,17 +94,17 @@ func (c *Calendar) List() ([]date, error) {
 	rows, err := c.list.Query()
 	if err != nil {
 		glog.Error(err)
-		return []date{}, err
+		return []date.Date{}, err
 	}
 	defer rows.Close()
 
-	var list []date
+	var list []date.Date
 	for rows.Next() {
-		var d date
+		var d date.Date
 		err := rows.Scan(&d)
 		if err != nil {
 			glog.Error(err)
-			return []date{}, err
+			return []date.Date{}, err
 		}
 		list = append(list, d)
 	}
@@ -111,7 +112,7 @@ func (c *Calendar) List() ([]date, error) {
 	return list, nil
 }
 
-func (c *Calendar) Remove(dates ...date) error {
+func (c *Calendar) Remove(dates ...date.Date) error {
 	c.createTableOnce()
 
 	if c.remove == nil {

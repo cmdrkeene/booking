@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/cmdrkeene/booking/pkg/date"
 	"github.com/golang/glog"
 )
 
@@ -19,7 +20,7 @@ type Handler struct {
 }
 
 var templateHelpers = template.FuncMap{
-	"formatDate": func(d date) string { return d.Format(layoutDatePretty) },
+	"formatDate": func(d date.Date) string { return d.Format(date.Pretty) },
 }
 
 // Display form with available dates listed
@@ -36,7 +37,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var data = struct {
-		AvailableDates []date
+		AvailableDates []date.Date
 		Rates          []rate
 	}{available, allRates}
 	h.writeTemplate(w, t, data)
@@ -153,8 +154,8 @@ func (form *Form) Submit(r *http.Request) (bookingId, []error) {
 
 // helper to bucket form fields
 type formFields struct {
-	Checkin  date
-	Checkout date
+	Checkin  date.Date
+	Checkout date.Date
 	Card     creditCard
 	Email    email
 	Name     name
@@ -191,12 +192,12 @@ func newFormFields(r *http.Request) (formFields, []error) {
 		errs = append(errs, err)
 	}
 
-	fields.Checkin, err = newDateFromString(r.FormValue(formKeyCheckin))
+	fields.Checkin, err = date.Parse(r.FormValue(formKeyCheckin))
 	if err != nil {
 		errs = append(errs, err)
 	}
 
-	fields.Checkout, err = newDateFromString(r.FormValue(formKeyCheckout))
+	fields.Checkout, err = date.Parse(r.FormValue(formKeyCheckout))
 	if err != nil {
 		errs = append(errs, err)
 	}

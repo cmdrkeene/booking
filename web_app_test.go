@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/cmdrkeene/booking/pkg/date"
 	"github.com/facebookgo/inject"
 )
 
@@ -25,9 +26,9 @@ func TestController(t *testing.T) {
 		t.Error(err)
 	}
 	calendar.Add(
-		newDate(2015, 1, 1),
-		newDate(2015, 1, 2),
-		newDate(2015, 1, 3),
+		date.New(2015, 1, 1),
+		date.New(2015, 1, 2),
+		date.New(2015, 1, 3),
 	)
 
 	// get lists available dates
@@ -108,8 +109,8 @@ func TestForm(t *testing.T) {
 
 	// set availability
 	calendar.Add(
-		newDate(2015, 1, 1),
-		newDate(2015, 1, 2),
+		date.New(2015, 1, 1),
+		date.New(2015, 1, 2),
 	)
 
 	// post form

@@ -9,5 +9,5 @@ else
 fi
 
 while sleep 1; do
-  ls *.go | entr -d -c go test ./... -logtostderr=true
+  ls *.go | entr -d -c go test ./...
 done

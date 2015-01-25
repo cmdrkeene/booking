@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/cmdrkeene/booking/pkg/date"
 	"github.com/golang/glog"
 )
 
@@ -16,8 +17,8 @@ func (id bookingId) String() string {
 }
 
 type booking struct {
-	Checkin  date
-	Checkout date
+	Checkin  date.Date
+	Checkout date.Date
 	GuestId  guestId
 	Id       bookingId
 	Rate     rate
@@ -64,8 +65,8 @@ var (
 )
 
 func (r *Register) Book(
-	checkIn date,
-	checkOut date,
+	checkIn date.Date,
+	checkOut date.Date,
 	guest guestId,
 	rate rate,
 ) (bookingId, error) {
@@ -163,8 +164,8 @@ func (r *Register) List() ([]booking, error) {
 
 	var list []booking
 	for rows.Next() {
-		var checkin date
-		var checkout date
+		var checkin date.Date
+		var checkout date.Date
 		var guestId guestId
 		var id bookingId
 		var rate rate

@@ -1,18 +1,19 @@
-package booking
+package date
 
 import (
 	"reflect"
 	"testing"
+	"time"
 )
 
-func TestDateFormat(t *testing.T) {
+func TestFormat(t *testing.T) {
 	var tests = []struct {
-		date   date
+		date   Date
 		layout string
 		output string
 	}{
-		{newDate(2015, 2, 14), layoutDateISO8601, "2015-02-14"},
-		{newDate(2015, 2, 14), layoutDatePretty, "February 14, 2015"},
+		{New(2015, 2, 14), ISO8601, "2015-02-14"},
+		{New(2015, 2, 14), Pretty, "February 14, 2015"},
 	}
 
 	for _, tt := range tests {
@@ -23,22 +24,24 @@ func TestDateFormat(t *testing.T) {
 	}
 }
 
-func TestNewDateFromString(t *testing.T) {
+func TestParse(t *testing.T) {
 	var tests = []struct {
-		input string
-		err   error
-		date  date
+		src  interface{}
+		date Date
+		err  error
 	}{
-		{"", invalidDate, date{}},
-		{"2015-01-02", nil, newDate(2015, 1, 2)},
+		{time.Date(2015, 2, 3, 4, 5, 6, 7, time.UTC), New(2015, 2, 3), nil},
+		{"", Date{}, ParseError},
+		{"2015-01-02", New(2015, 1, 2), nil},
 	}
 
 	for _, tt := range tests {
-		date, err := newDateFromString(tt.input)
+		date, err := Parse(tt.src)
 		if tt.err != err {
 			t.Error("want", tt.err)
 			t.Error("got ", err)
 		}
+
 		if !reflect.DeepEqual(tt.date, date) {
 			t.Error("want", tt.date)
 			t.Error("got ", date)
@@ -46,16 +49,16 @@ func TestNewDateFromString(t *testing.T) {
 	}
 }
 
-func TestDateDaysApart(t *testing.T) {
+func TestDaysApart(t *testing.T) {
 	var tests = []struct {
-		d1 date
-		d2 date
+		d1 Date
+		d2 Date
 		n  int
 	}{
-		{newDate(2015, 1, 1), newDate(2015, 1, 1), 0},
-		{newDate(2015, 1, 1), newDate(2015, 1, 2), 1},
-		{newDate(2015, 1, 2), newDate(2015, 1, 1), 1},
-		{newDate(2015, 1, 1), newDate(2015, 1, 5), 4},
+		{New(2015, 1, 1), New(2015, 1, 1), 0},
+		{New(2015, 1, 1), New(2015, 1, 2), 1},
+		{New(2015, 1, 2), New(2015, 1, 1), 1},
+		{New(2015, 1, 1), New(2015, 1, 5), 4},
 	}
 	for _, tt := range tests {
 		if n := tt.d1.DaysApart(tt.d2); n != tt.n {

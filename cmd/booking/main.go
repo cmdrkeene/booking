@@ -55,6 +55,10 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Seed dates
+	// calendar.Add()
+	// calendar.Add()
+
 	// Start
 	glog.Infoln("listening on", *flagHttp)
 	glog.Fatal(http.ListenAndServe(*flagHttp, &handler))

@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/cmdrkeene/booking/pkg/date"
 	"github.com/facebookgo/inject"
 )
 
@@ -19,8 +20,8 @@ func TestRegister(t *testing.T) {
 
 	// book -> checkInAfterOut
 	_, err = register.Book(
-		newDate(2015, 1, 5),
-		newDate(2015, 1, 2),
+		date.New(2015, 1, 5),
+		date.New(2015, 1, 2),
 		guestId(123),
 		withBunny,
 	)
@@ -31,8 +32,8 @@ func TestRegister(t *testing.T) {
 
 	// book -> stayTooShort
 	_, err = register.Book(
-		newDate(2015, 1, 2),
-		newDate(2015, 1, 2),
+		date.New(2015, 1, 2),
+		date.New(2015, 1, 2),
 		guestId(123),
 		withBunny,
 	)
@@ -43,14 +44,14 @@ func TestRegister(t *testing.T) {
 
 	// book -> ok
 	register.Calendar.Add(
-		newDate(2015, 1, 2),
-		newDate(2015, 1, 3),
-		newDate(2015, 1, 4),
-		newDate(2015, 1, 5),
+		date.New(2015, 1, 2),
+		date.New(2015, 1, 3),
+		date.New(2015, 1, 4),
+		date.New(2015, 1, 5),
 	)
 	id, err := register.Book(
-		newDate(2015, 1, 2),
-		newDate(2015, 1, 5),
+		date.New(2015, 1, 2),
+		date.New(2015, 1, 5),
 		guestId(123),
 		withBunny,
 	)
@@ -65,8 +66,8 @@ func TestRegister(t *testing.T) {
 	}
 	want := []booking{
 		booking{
-			Checkin:  newDate(2015, 1, 2),
-			Checkout: newDate(2015, 1, 5),
+			Checkin:  date.New(2015, 1, 2),
+			Checkout: date.New(2015, 1, 5),
 			GuestId:  guestId(123),
 			Id:       id,
 			Rate:     withBunny,

@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/cmdrkeene/booking/pkg/date"
 	"github.com/facebookgo/inject"
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -28,9 +29,9 @@ func TestCalendar(t *testing.T) {
 	}
 
 	// Add() -> ok
-	list := []date{
-		newDate(2014, 1, 1),
-		newDate(2014, 1, 2),
+	list := []date.Date{
+		date.New(2014, 1, 1),
+		date.New(2014, 1, 2),
 	}
 	err = cal.Add(list...)
 	if err != nil {
@@ -46,14 +47,14 @@ func TestCalendar(t *testing.T) {
 
 	// Available()
 	var rangeTests = []struct {
-		start date
-		stop  date
+		start date.Date
+		stop  date.Date
 		ok    bool
 	}{
-		{newDate(2014, 1, 1), newDate(2014, 1, 1), true},
-		{newDate(2014, 1, 1), newDate(2014, 1, 2), true},
-		{newDate(2014, 1, 1), newDate(2014, 1, 3), false},
-		{newDate(2013, 12, 31), newDate(2014, 1, 2), false},
+		{date.New(2014, 1, 1), date.New(2014, 1, 1), true},
+		{date.New(2014, 1, 1), date.New(2014, 1, 2), true},
+		{date.New(2014, 1, 1), date.New(2014, 1, 3), false},
+		{date.New(2013, 12, 31), date.New(2014, 1, 2), false},
 	}
 	for _, tt := range rangeTests {
 		if ok, _ := cal.Available(tt.start, tt.stop); ok != tt.ok {
@@ -70,7 +71,7 @@ func TestCalendar(t *testing.T) {
 	}
 
 	dates, err = cal.List()
-	list = []date{list[1]}
+	list = []date.Date{list[1]}
 	if !reflect.DeepEqual(list, dates) {
 		t.Error("want", list)
 		t.Error("got ", dates)
