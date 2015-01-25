@@ -4,11 +4,12 @@ import (
 	"database/sql"
 	"flag"
 	"fmt"
-	"log"
+	"net/http"
 	"os"
 
 	"github.com/cmdrkeene/booking"
 	"github.com/facebookgo/inject"
+	"github.com/golang/glog"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -30,20 +31,20 @@ func main() {
 	var calendar booking.Calendar
 	var form booking.Form
 	var guestbook booking.Guestbook
+	var handler booking.Handler
 	var ledger booking.Ledger
 	var register booking.Register
-	var server booking.Server
 
 	// Dependency Injection
 	var g inject.Graph
 	err = g.Provide(
-		&inject.Object{Value: db},
 		&inject.Object{Value: &calendar},
 		&inject.Object{Value: &form},
 		&inject.Object{Value: &guestbook},
+		&inject.Object{Value: &handler},
 		&inject.Object{Value: &ledger},
 		&inject.Object{Value: &register},
-		&inject.Object{Value: &server},
+		&inject.Object{Value: db},
 	)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -55,5 +56,6 @@ func main() {
 	}
 
 	// Start
-	log.Fatal(server.ListenAndServe(*flagHttp))
+	glog.Infoln("listening on", *flagHttp)
+	glog.Fatal(http.ListenAndServe(*flagHttp, &handler))
 }

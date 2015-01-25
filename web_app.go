@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
+	"log"
 
 	"net/http"
 	"strings"
@@ -11,32 +12,8 @@ import (
 	"github.com/golang/glog"
 )
 
-// Serve web application
-type Server struct {
-	Controller *Controller `inject:""`
-}
-
-func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "GET" {
-		s.Controller.Get(w, r)
-		return
-	}
-
-	if r.Method == "POST" {
-		s.Controller.Post(w, r)
-		return
-	}
-
-	http.Error(w, "Not Implemented", http.StatusNotImplemented)
-}
-
-func (s *Server) ListenAndServe(addr string) error {
-	glog.Infoln("listening on", addr)
-	return http.ListenAndServe(addr, s)
-}
-
 // Handle HTTP interaction with Form
-type Controller struct {
+type Handler struct {
 	Calendar *Calendar `inject:""`
 	Form     *Form     `inject:""`
 }
@@ -46,12 +23,12 @@ var templateHelpers = template.FuncMap{
 }
 
 // Display form with available dates listed
-func (c *Controller) Get(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	t := template.New("form.html.go")
 	t = t.Funcs(templateHelpers)
 	t = template.Must(t.Parse(formHtml))
 
-	available, err := c.Calendar.List()
+	available, err := h.Calendar.List()
 	if err != nil {
 		glog.Error(err)
 		http.Error(w, err.Error(), 500)
@@ -62,12 +39,12 @@ func (c *Controller) Get(w http.ResponseWriter, r *http.Request) {
 		AvailableDates []date
 		Rates          []rate
 	}{available, allRates}
-	c.writeTemplate(w, t, data)
+	h.writeTemplate(w, t, data)
 }
 
 // Submit form and display errors or confirmation page
-func (c *Controller) Post(w http.ResponseWriter, r *http.Request) {
-	bookingId, errors := c.Form.Submit(r)
+func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {
+	bookingId, errors := h.Form.Submit(r)
 	if len(errors) > 0 {
 		var errorMessages []string
 		for _, err := range errors {
@@ -83,9 +60,31 @@ func (c *Controller) Post(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(message))
 }
 
+/*
+Booking HTTP Handler
+
+GET /   -> 200 lists availability and form
+POST /  -> 201 submits form (register, pay, and book workflow)
+
+*/
+func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "GET" {
+		h.Get(w, r)
+		return
+	}
+
+	if r.Method == "POST" {
+		log.Print("calling post")
+		h.Post(w, r)
+		return
+	}
+
+	http.Error(w, "Not Implemented", http.StatusNotImplemented)
+}
+
 // buffers template Execute and returns 500 on any error
 // avoids returning 200 OK when Execute fails after starting Write()
-func (c *Controller) writeTemplate(
+func (h *Handler) writeTemplate(
 	w http.ResponseWriter,
 	t *template.Template,
 	data interface{},

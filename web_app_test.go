@@ -11,19 +11,15 @@ import (
 	"github.com/facebookgo/inject"
 )
 
-func TestServer(t *testing.T) {
-	// mostly routing, excercise
-}
-
-func TestControllerGet(t *testing.T) {
+func TestController(t *testing.T) {
 	db := testDB()
 	defer db.Close()
 	var calendar Calendar
-	var controller Controller
+	var handler Handler
 	err := inject.Populate(
 		db,
 		&calendar,
-		&controller,
+		&handler,
 	)
 	if err != nil {
 		t.Error(err)
@@ -34,12 +30,13 @@ func TestControllerGet(t *testing.T) {
 		newDate(2015, 1, 3),
 	)
 
+	// get lists available dates
 	w := httptest.NewRecorder()
 	r, err := http.NewRequest("GET", "/", nil)
 	if err != nil {
 		t.Error(err)
 	}
-	controller.Get(w, r)
+	handler.ServeHTTP(w, r)
 
 	if w.Code != http.StatusOK {
 		t.Error("want", http.StatusOK)
@@ -57,6 +54,35 @@ func TestControllerGet(t *testing.T) {
 			t.Error("want", s)
 			t.Error("got ", string(body))
 		}
+	}
+
+	// post registers, pays, and books dates
+	vals := url.Values{}
+	vals.Add(formKeyCardCVC, "123")
+	vals.Add(formKeyCardMonth, "01")
+	vals.Add(formKeyCardNumber, "1111222233334444")
+	vals.Add(formKeyCardYear, "15")
+	vals.Add(formKeyCheckin, "2015-01-01")
+	vals.Add(formKeyCheckout, "2015-01-02")
+	vals.Add(formKeyCheckout, "2015-01-03")
+	vals.Add(formKeyEmail, "a@b")
+	vals.Add(formKeyName, "a b")
+
+	w = httptest.NewRecorder()
+	r, err = http.NewRequest("POST", "/", strings.NewReader(vals.Encode()))
+	if err != nil {
+		t.Error(err)
+	}
+	r.Header.Set(
+		"Content-Type",
+		"application/x-www-form-urlencoded; param=value",
+	)
+
+	handler.ServeHTTP(w, r)
+
+	if w.Code != 201 {
+		t.Error("want", 201)
+		t.Error("got ", w.Code)
 	}
 }
 

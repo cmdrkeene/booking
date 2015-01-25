@@ -4,11 +4,15 @@ go:
   - 1.4.1
   - tip
 
+before_install:
+  - go get github.com/axw/gocov/gocov
+  - go get github.com/mattn/goveralls
+  - if ! go get code.google.com/p/go.tools/cmd/cover; then go get golang.org/x/tools/cmd/cover; fi
 install:
   - export PATH=$PATH:$HOME/gopath/bin
   - go get -v -u github.com/kr/godep
   - godep get
   - godep go build -v ./...
 script:
-  - godep go test ./...
+  - $HOME/gopath/bin/goveralls -repotoken IuTDUDjzEdSLQwXg8Oeiy6THh7ovk1tCX # also runs go test ./...
   - test -z "$(go fmt ./...)"
