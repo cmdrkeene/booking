@@ -50,6 +50,7 @@ func (c *Calendar) Add(dates ...date.Date) error {
 			glog.Error(err)
 			return err
 		}
+		glog.Infoln("added", d, "to availabilty calendar")
 	}
 	return nil
 }
@@ -128,6 +129,7 @@ func (c *Calendar) Remove(dates ...date.Date) error {
 			glog.Error(err)
 			return err
 		}
+		glog.Infoln("removed", d, "from availability calendar")
 	}
 	return nil
 }

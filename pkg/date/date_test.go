@@ -33,6 +33,7 @@ func TestParse(t *testing.T) {
 		{time.Date(2015, 2, 3, 4, 5, 6, 7, time.UTC), New(2015, 2, 3), nil},
 		{"", Date{}, ParseError},
 		{"2015-01-02", New(2015, 1, 2), nil},
+		{"01/02/2015", New(2015, 1, 2), nil},
 	}
 
 	for _, tt := range tests {

@@ -6,14 +6,33 @@ var formHtml = `
     <h1>Apartment</h1>
     <h3>Book your stay</h3>
     <form action="/" method="post">
+      {{ if .Errors }}
+        <ul>
+        {{ range .Errors }}
+          <li>{{capitalize .Error}}</li>
+        {{ end }}
+        </ul>
+      {{ end }}
       <fieldset>
-        <legend>Dates</legend>
+        <legend>Availability</legend>
         {{range .AvailableDates}}
-          <input type="checkbox" name="dates" value="{{ . }}" />
-          {{.}}
+          {{pretty .}}
           <br />
         {{end}}
         </ul>
+      </fieldset>
+      <fieldset>
+        <legend>Dates</legend>
+        <table>
+          <tr>
+            <th align="left">Check In</th>
+            <td><input type="text" name="checkin" placeholder="mm/dd/yyyy"/></td>
+          </tr>
+          <tr>
+            <th align="left">Check Out</th>
+            <td><input type="text" name="checkout" placeholder="mm/dd/yyyy"/></td>
+          </tr>
+        </table>
       </fieldset>
       <fieldset>
         <legend>Rate</legend>

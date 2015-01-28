@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/cmdrkeene/booking"
+	"github.com/cmdrkeene/booking/pkg/date"
 	"github.com/facebookgo/inject"
 	"github.com/golang/glog"
 	_ "github.com/mattn/go-sqlite3"
@@ -56,8 +58,9 @@ func main() {
 	}
 
 	// Seed dates
-	// calendar.Add()
-	// calendar.Add()
+	today, _ := date.Parse(time.Now())
+	calendar.Add(today)
+	calendar.Add(today.Add(1))
 
 	// Start
 	glog.Infoln("listening on", *flagHttp)

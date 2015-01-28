@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"html/template"
 	"log"
+	"unicode"
 
 	"net/http"
-	"strings"
 
 	"github.com/cmdrkeene/booking/pkg/date"
 	"github.com/golang/glog"
@@ -20,11 +20,35 @@ type Handler struct {
 }
 
 var templateHelpers = template.FuncMap{
-	"formatDate": func(d date.Date) string { return d.Format(date.Pretty) },
+	"capitalize": func(s string) string {
+		a := []rune(s)
+		a[0] = unicode.ToUpper(a[0])
+		return string(a)
+	},
+	"pretty": func(d date.Date) string {
+		return d.Format(date.Pretty)
+	},
 }
 
 // Display form with available dates listed
 func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
+	h.renderForm(w, []error{})
+}
+
+// Submit form and display errors or confirmation page
+func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {
+	bookingId, errors := h.Form.Submit(r)
+	if len(errors) > 0 {
+		h.renderForm(w, errors)
+		return
+	}
+
+	w.WriteHeader(201)
+	message := fmt.Sprintf("success! booking confirmation id %d", bookingId)
+	w.Write([]byte(message))
+}
+
+func (h *Handler) renderForm(w http.ResponseWriter, errors []error) {
 	t := template.New("form.html.go")
 	t = t.Funcs(templateHelpers)
 	t = template.Must(t.Parse(formHtml))
@@ -39,26 +63,13 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	var data = struct {
 		AvailableDates []date.Date
 		Rates          []rate
-	}{available, allRates}
-	h.writeTemplate(w, t, data)
-}
-
-// Submit form and display errors or confirmation page
-func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {
-	bookingId, errors := h.Form.Submit(r)
-	if len(errors) > 0 {
-		var errorMessages []string
-		for _, err := range errors {
-			errorMessages = append(errorMessages, err.Error())
-		}
-		s := strings.Join(errorMessages, ", ")
-		http.Error(w, s, 500)
-		return
+		Errors         []error
+	}{
+		available,
+		allRates,
+		errors,
 	}
-
-	w.WriteHeader(201)
-	message := fmt.Sprintf("success! booking confirmation id %d", bookingId)
-	w.Write([]byte(message))
+	h.writeTemplate(w, t, data)
 }
 
 /*

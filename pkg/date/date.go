@@ -6,10 +6,19 @@ import (
 	"database/sql/driver"
 	"errors"
 	"fmt"
+
 	"time"
 )
 
+// Duration helper
 const Day = 24 * time.Hour
+
+// Formats
+const (
+	Pretty  = "January 2, 2006"
+	MDY     = "01/02/2006"
+	ISO8601 = "2006-01-02"
+)
 
 // Simpler Date object than time.Time
 type Date struct {
@@ -40,12 +49,20 @@ func parseString(s string) (Date, error) {
 		return Date{}, ParseError
 	}
 
-	t, err := time.Parse(ISO8601, s)
-	if err != nil {
-		return Date{}, ParseError
+	var t time.Time
+	var err error
+
+	t, err = time.Parse(MDY, s)
+	if err == nil {
+		return parseTime(t)
 	}
 
-	return parseTime(t)
+	t, err = time.Parse(ISO8601, s)
+	if err == nil {
+		return parseTime(t)
+	}
+
+	return Date{}, ParseError
 }
 
 func parseTime(t time.Time) (Date, error) {
@@ -75,11 +92,6 @@ func (d Date) DaysApart(u Date) int {
 
 	return abs(int(duration.Hours() / 24))
 }
-
-const (
-	Pretty  = "January 2, 2006"
-	ISO8601 = "2006-01-02"
-)
 
 func (d Date) Format(layout string) string {
 	return d.t.Format(layout)

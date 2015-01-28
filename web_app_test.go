@@ -46,9 +46,9 @@ func TestController(t *testing.T) {
 
 	body := w.Body.Bytes()
 	dates := []string{
-		"2015-01-01",
-		"2015-01-02",
-		"2015-01-03",
+		"January 1, 2015",
+		"January 2, 2015",
+		"January 3, 2015",
 	}
 	for _, s := range dates {
 		if !bytes.Contains(body, []byte(s)) {
