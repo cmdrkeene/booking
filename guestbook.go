@@ -5,6 +5,7 @@ import (
 	"database/sql/driver"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/golang/glog"
@@ -251,6 +252,10 @@ type phoneNumber struct {
 
 // TODO validate, maybe libphonenumber?
 func newPhoneNumber(s string) (phoneNumber, error) {
+	// OK +1 (555) 123-4567x890
+	if !regexp.MustCompile(`^[0-9\-\(\)x ]+$`).MatchString(s) {
+		return phoneNumber{}, errors.New("invalid phone number")
+	}
 	return phoneNumber{s: s}, nil
 }
 

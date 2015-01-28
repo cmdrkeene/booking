@@ -31,7 +31,7 @@ func main() {
 
 	// Domain
 	var calendar booking.Calendar
-	var form booking.Form
+	var formBuilder booking.FormBuilder
 	var guestbook booking.Guestbook
 	var handler booking.Handler
 	var ledger booking.Ledger
@@ -41,7 +41,7 @@ func main() {
 	var g inject.Graph
 	err = g.Provide(
 		&inject.Object{Value: &calendar},
-		&inject.Object{Value: &form},
+		&inject.Object{Value: &formBuilder},
 		&inject.Object{Value: &guestbook},
 		&inject.Object{Value: &handler},
 		&inject.Object{Value: &ledger},

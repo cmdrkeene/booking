@@ -72,6 +72,16 @@ var (
 	allRates = []rate{withBunny, withoutBunny}
 )
 
+// limits "new" rates a predefined list
+func newRate(name string) (rate, error) {
+	for _, r := range allRates {
+		if r.Name == name {
+			return r, nil
+		}
+	}
+	return rate{}, errors.New("rate not found")
+}
+
 // See: http://www.regular-expressions.info/creditcard.html
 type creditCard struct {
 	CVC    int

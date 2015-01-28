@@ -16,7 +16,6 @@ const Day = 24 * time.Hour
 // Formats
 const (
 	Pretty  = "January 2, 2006"
-	MDY     = "01/02/2006"
 	ISO8601 = "2006-01-02"
 )
 
@@ -52,9 +51,17 @@ func parseString(s string) (Date, error) {
 	var t time.Time
 	var err error
 
-	t, err = time.Parse(MDY, s)
-	if err == nil {
-		return parseTime(t)
+	dateFormats := []string{
+		"01/02/2006",
+		"01/02/06",
+		"1/2/2006",
+		"1/2/06",
+	}
+	for _, format := range dateFormats {
+		t, err = time.Parse(format, s)
+		if err == nil {
+			return parseTime(t)
+		}
 	}
 
 	t, err = time.Parse(ISO8601, s)

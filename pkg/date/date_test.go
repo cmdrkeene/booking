@@ -34,16 +34,22 @@ func TestParse(t *testing.T) {
 		{"", Date{}, ParseError},
 		{"2015-01-02", New(2015, 1, 2), nil},
 		{"01/02/2015", New(2015, 1, 2), nil},
+		{"01/02/15", New(2015, 1, 2), nil},
+		{"1/2/2015", New(2015, 1, 2), nil},
+		{"1/2/15", New(2015, 1, 2), nil},
 	}
 
 	for _, tt := range tests {
 		date, err := Parse(tt.src)
 		if tt.err != err {
+			t.Error("src ", tt.src)
 			t.Error("want", tt.err)
 			t.Error("got ", err)
+			continue
 		}
 
 		if !reflect.DeepEqual(tt.date, date) {
+			t.Error("src ", tt.src)
 			t.Error("want", tt.date)
 			t.Error("got ", date)
 		}
