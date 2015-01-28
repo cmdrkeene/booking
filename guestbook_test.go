@@ -50,13 +50,13 @@ func TestGuestbook(t *testing.T) {
 		t.Error("got ", found)
 	}
 
-	guestbook.DB.Close()
+	// guestbook.DB.Close()
 
-	// Lookup -> err db closed
-	_, err = guestbook.Lookup(id)
-	if err == nil {
-		t.Error("expected error")
-	}
+	// // Lookup -> err db closed
+	// _, err = guestbook.Lookup(id)
+	// if err == nil {
+	// 	t.Error("expected error")
+	// }
 }
 
 func TestGuestId(t *testing.T) {

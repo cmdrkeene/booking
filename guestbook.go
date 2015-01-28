@@ -48,45 +48,21 @@ type guest struct {
 type Guestbook struct {
 	DB *sql.DB `inject:""`
 
-	lookup       *sql.Stmt
-	register     *sql.Stmt
 	tableCreated bool
 }
 
 var guestNotFound = errors.New("guest not found")
 
-func (g *Guestbook) createTableOnce() {
-	if g.tableCreated {
-		return
-	}
-
-	_, err := g.DB.Exec(`
-    create table Guestbook (
-      Email text unique not null,
-      Id integer primary key autoincrement not null,
-      Name text not null,
-      PhoneNumber text not null
-    )
-  `)
-	if err == nil {
-		g.tableCreated = true
-		glog.Info("Guestbook table created")
-	} else {
-		glog.Warning(err)
-	}
-}
-
 func (g *Guestbook) Lookup(byId guestId) (guest, error) {
 	g.createTableOnce()
 
-	if g.lookup == nil {
-		var err error
-		g.lookup, err = g.DB.Prepare(
-			`select Email, Id, Name, PhoneNumber from Guestbook where Id = $1`,
-		)
-		if err != nil {
-			panic(err)
-		}
+	stmt, err := g.DB.Prepare(`
+		select Email, Id, Name, PhoneNumber 
+		from Guestbook 
+		where Id = $1`,
+	)
+	if err != nil {
+		panic(err)
 	}
 
 	var id guestId
@@ -94,8 +70,8 @@ func (g *Guestbook) Lookup(byId guestId) (guest, error) {
 	var email email
 	var phone phoneNumber
 
-	row := g.lookup.QueryRow(byId)
-	err := row.Scan(
+	row := stmt.QueryRow(byId)
+	err = row.Scan(
 		&email,
 		&id,
 		&name,
@@ -119,29 +95,52 @@ func (g *Guestbook) Lookup(byId guestId) (guest, error) {
 	}, nil
 }
 
-// If email already registered, return existing record
-// If someone wants to sign someone else up and pay, fine
-// It could be confusing to call this Register() as there is a noun
-// Register already.
+// Emails are unique
 func (g *Guestbook) Register(
+	name name,
+	email email,
+	phone phoneNumber,
+) (guestId, error) {
+	tx, err := g.DB.Begin()
+	if err != nil {
+		glog.Error(err)
+		return 0, err
+	}
+
+	guestId, err := g.RegisterTx(tx, name, email, phone)
+	if err != nil {
+		tx.Rollback()
+		glog.Error(err)
+		return 0, err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		glog.Error(err)
+		return 0, err
+	}
+
+	return guestId, nil
+}
+
+// Register with a passed Tx - caller is responsible for Commit/Rollback
+func (g *Guestbook) RegisterTx(
+	tx *sql.Tx,
 	name name,
 	email email,
 	phone phoneNumber,
 ) (guestId, error) {
 	g.createTableOnce()
 
-	if g.register == nil {
-		var err error
-		g.register, err = g.DB.Prepare(`
+	stmt, err := tx.Prepare(`
       insert into Guestbook (Email, Name, PhoneNumber)
       values ($1, $2, $3)
     `)
-		if err != nil {
-			panic(err)
-		}
+	if err != nil {
+		panic(err)
 	}
 
-	result, err := g.register.Exec(email, name, phone)
+	result, err := stmt.Exec(email, name, phone)
 	if err != nil {
 		glog.Error(err)
 		return 0, err
@@ -154,6 +153,27 @@ func (g *Guestbook) Register(
 	}
 
 	return guestId(lastId), nil
+}
+
+func (g *Guestbook) createTableOnce() {
+	if g.tableCreated {
+		return
+	}
+
+	_, err := g.DB.Exec(`
+    create table Guestbook (
+      Email text unique not null,
+      Id integer primary key autoincrement not null,
+      Name text not null,
+      PhoneNumber text not null
+    )
+  `)
+	if err == nil {
+		g.tableCreated = true
+		glog.Info("Guestbook table created")
+	} else {
+		glog.Warning(err)
+	}
 }
 
 // A guest's name - must be 2 parts, not empty

@@ -1,6 +1,7 @@
 package booking
 
 import (
+	"database/sql"
 	"net/http"
 	"strconv"
 
@@ -11,6 +12,7 @@ import (
 // Builds Form instances
 type FormBuilder struct {
 	Calendar  *Calendar  `inject:""`
+	DB        *sql.DB    `inject:""`
 	Guestbook *Guestbook `inject:""`
 	Ledger    *Ledger    `inject:""`
 	Register  *Register  `inject:""`
@@ -19,6 +21,7 @@ type FormBuilder struct {
 func (b *FormBuilder) Build() *Form {
 	return &Form{
 		calendar:  b.Calendar,
+		db:        b.DB,
 		guestbook: b.Guestbook,
 		ledger:    b.Ledger,
 		register:  b.Register,
@@ -29,6 +32,7 @@ func (b *FormBuilder) Build() *Form {
 type Form struct {
 	// Dependencies
 	calendar  *Calendar
+	db        *sql.DB
 	guestbook *Guestbook
 	ledger    *Ledger
 	register  *Register
@@ -151,8 +155,15 @@ func (form *Form) Submit(r *http.Request) (bookingId, bool) {
 		return 0, false
 	}
 
+	// start a transaction, <Foo>Tx funcs call Tx.Rollback() on error
+	tx, err := form.db.Begin()
+	if err != nil {
+		panic(err)
+	}
+
 	// register guest
-	guestId, err := form.guestbook.Register(
+	guestId, err := form.guestbook.RegisterTx(
+		tx,
 		form.name,
 		form.email,
 		form.phone,
@@ -164,7 +175,8 @@ func (form *Form) Submit(r *http.Request) (bookingId, bool) {
 	}
 
 	// charge card
-	err = form.ledger.Charge(
+	err = form.ledger.ChargeTx(
+		tx,
 		guestId,
 		form.rate.Amount,
 		form.creditCard(),
@@ -173,11 +185,13 @@ func (form *Form) Submit(r *http.Request) (bookingId, bool) {
 	if err != nil {
 		glog.Error(err)
 		form.Errors["Charge"] = err.Error()
+
 		return 0, false
 	}
 
 	// book dates
-	bookingId, err := form.register.Book(
+	bookingId, err := form.register.BookTx(
+		tx,
 		form.checkin,
 		form.checkout,
 		guestId,
@@ -186,6 +200,14 @@ func (form *Form) Submit(r *http.Request) (bookingId, bool) {
 	if err != nil {
 		form.Errors["Book"] = err.Error()
 		glog.Error(err)
+		return 0, false
+	}
+
+	// commit and tell user if it failed
+	err = tx.Commit()
+	if err != nil {
+		glog.Error(err)
+		form.Errors["Transaction"] = err.Error()
 		return 0, false
 	}
 

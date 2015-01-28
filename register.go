@@ -29,9 +29,6 @@ type Register struct {
 	Calendar *Calendar `inject:""`
 	DB       *sql.DB   `inject:""`
 
-	book         *sql.Stmt
-	cancel       *sql.Stmt
-	list         *sql.Stmt
 	tableCreated bool
 }
 
@@ -40,14 +37,14 @@ func (r *Register) createTableOnce() {
 		return
 	}
 
-	_, err := r.DB.Exec(
-		`create table Register (
-      Checkin datetime not null,
-      Checkout datetime not null,
-      GuestId integer not null,
-      Id integer primary key autoincrement not null,
-      Rate text not null
-    )`,
+	_, err := r.DB.Exec(`
+		create table Register (
+	      Checkin datetime not null,
+	      Checkout datetime not null,
+	      GuestId integer not null,
+	      Id integer primary key autoincrement not null,
+	      Rate text not null
+	    )`,
 	)
 	if err == nil {
 		r.tableCreated = true
@@ -65,6 +62,35 @@ var (
 )
 
 func (r *Register) Book(
+	checkIn date.Date,
+	checkOut date.Date,
+	guest guestId,
+	rate rate,
+) (bookingId, error) {
+	tx, err := r.DB.Begin()
+	if err != nil {
+		return 0, err
+	}
+
+	bookingId, err := r.BookTx(tx, checkIn, checkOut, guest, rate)
+	if err != nil {
+		tx.Rollback()
+		glog.Error(err)
+		return 0, err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		glog.Error(err)
+		return 0, err
+	}
+
+	return bookingId, nil
+}
+
+// Book with a passed Tx - caller is responsible for Commit/Rollback
+func (r *Register) BookTx(
+	tx *sql.Tx,
 	checkIn date.Date,
 	checkOut date.Date,
 	guest guestId,
@@ -93,19 +119,15 @@ func (r *Register) Book(
 	}
 
 	// TODO ensure can't be overbooked
-
-	if r.book == nil {
-		var err error
-		r.book, err = r.DB.Prepare(`
+	stmt, err := tx.Prepare(`
       insert into Register (Checkin, Checkout, GuestId, Rate)
       values ($1, $2, $3, $4)
     `)
-		if err != nil {
-			panic(err)
-		}
+	if err != nil {
+		panic(err)
 	}
 
-	result, err := r.book.Exec(checkIn, checkOut, guest, rate)
+	result, err := stmt.Exec(checkIn, checkOut, guest, rate)
 	if err != nil {
 		glog.Error(err)
 		return 0, err
@@ -123,15 +145,12 @@ func (r *Register) Book(
 func (r *Register) Cancel(id bookingId) error {
 	r.createTableOnce()
 
-	if r.cancel == nil {
-		var err error
-		r.cancel, err = r.DB.Prepare(`delete from Register where Id=$1`)
-		if err != nil {
-			panic(err)
-		}
+	stmt, err := r.DB.Prepare(`delete from Register where Id=$1`)
+	if err != nil {
+		panic(err)
 	}
 
-	_, err := r.cancel.Exec(id)
+	_, err = stmt.Exec(id)
 	if err != nil {
 		glog.Error(err)
 		return err
@@ -143,19 +162,16 @@ func (r *Register) Cancel(id bookingId) error {
 func (r *Register) List() ([]booking, error) {
 	r.createTableOnce()
 
-	if r.list == nil {
-		var err error
-		r.list, err = r.DB.Prepare(`
+	stmt, err := r.DB.Prepare(`
       select Checkin, Checkout, GuestId, Id, Rate
       from Register
       order by CheckIn asc
     `)
-		if err != nil {
-			panic(err)
-		}
+	if err != nil {
+		panic(err)
 	}
 
-	rows, err := r.list.Query()
+	rows, err := stmt.Query()
 	if err != nil {
 		glog.Error(err)
 		return []booking{}, err

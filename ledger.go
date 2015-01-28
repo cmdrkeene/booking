@@ -113,6 +113,35 @@ func (l *Ledger) Charge(
 	card creditCard,
 	memo memo,
 ) error {
+	tx, err := l.DB.Begin()
+	if err != nil {
+		return err
+	}
+
+	err = l.ChargeTx(tx, guest, amount, card, memo)
+	if err != nil {
+		tx.Rollback()
+		glog.Error(err)
+		return err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		glog.Error(err)
+		return err
+	}
+
+	return nil
+
+}
+
+func (l *Ledger) ChargeTx(
+	tx *sql.Tx,
+	guest guestId,
+	amount amount,
+	card creditCard,
+	memo memo,
+) error {
 	log.Println("charged", guest, amount, "on", card)
 	return nil
 }
