@@ -1,12 +1,11 @@
 package booking
 
 import (
-	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 
 	"github.com/cmdrkeene/booking/pkg/date"
+	"github.com/golang/glog"
 )
 
 // Builds Form instances
@@ -26,8 +25,7 @@ func (b *FormBuilder) Build() *Form {
 	}
 }
 
-// Register, Charge, and Book in one-step
-// Validates input state
+// One page booking form
 type Form struct {
 	// Dependencies
 	calendar  *Calendar
@@ -38,7 +36,7 @@ type Form struct {
 	// Errors
 	Errors map[string]string
 
-	// Fields
+	// Input
 	CardCVC    string
 	CardMonth  string
 	CardNumber string
@@ -49,6 +47,18 @@ type Form struct {
 	Name       string
 	Phone      string
 	Rate       string
+
+	// Private, valid fields
+	cardCVC    int
+	cardMonth  int
+	cardNumber int
+	cardYear   int
+	checkin    date.Date
+	checkout   date.Date
+	email      email
+	name       name
+	phone      phoneNumber
+	rate       rate
 }
 
 func (form *Form) AvailableDates() []date.Date {
@@ -76,7 +86,7 @@ const (
 	fvRate       = "Rate"
 )
 
-// Converts http.Request to Form and batches errors
+// Converts http.Request to Form. Caller must check Errors
 func (form *Form) Validate(r *http.Request) bool {
 	form.Errors = make(map[string]string)
 
@@ -91,8 +101,6 @@ func (form *Form) Validate(r *http.Request) bool {
 	form.Name = r.FormValue(fvName)
 	form.Phone = r.FormValue(fvPhone)
 	form.Rate = r.FormValue(fvRate)
-
-	fmt.Printf("%#v", form)
 
 	// new validator
 	validator := newValidator()
@@ -116,16 +124,16 @@ func (form *Form) Validate(r *http.Request) bool {
 	}
 
 	// check data format
-	validator.Integer(fvCardCVC, form.CardCVC)
-	validator.Integer(fvCardMonth, form.CardMonth)
-	validator.Integer(fvCardNumber, form.CardNumber)
-	validator.Integer(fvCardYear, form.CardYear)
-	validator.Date(fvCheckin, form.Checkin)
-	validator.Date(fvCheckout, form.Checkout)
-	validator.Email(fvEmail, form.Email)
-	validator.Name(fvName, form.Name)
-	validator.Phone(fvPhone, form.Phone)
-	validator.Rate(fvRate, form.Rate)
+	form.cardCVC = validator.Integer(fvCardCVC, form.CardCVC)
+	form.cardMonth = validator.Integer(fvCardMonth, form.CardMonth)
+	form.cardNumber = validator.Integer(fvCardNumber, form.CardNumber)
+	form.cardYear = validator.Integer(fvCardYear, form.CardYear)
+	form.checkin = validator.Date(fvCheckin, form.Checkin)
+	form.checkout = validator.Date(fvCheckout, form.Checkout)
+	form.email = validator.Email(fvEmail, form.Email)
+	form.name = validator.Name(fvName, form.Name)
+	form.phone = validator.Phone(fvPhone, form.Phone)
+	form.rate = validator.Rate(fvRate, form.Rate)
 
 	// do not continue if anything is invalid
 	if len(validator.Errors) > 0 {
@@ -136,45 +144,62 @@ func (form *Form) Validate(r *http.Request) bool {
 	return true
 }
 
-// func (form *Form) xSubmit(r *http.Request) (bookingId, []error) {
-// 	// register
-// 	guestId, err := form.Guestbook.Register(
-// 		fields.Name,
-// 		fields.Email,
-// 		fields.Phone,
-// 	)
-// 	if err != nil {
-// 		glog.Error(err)
-// 		return 0, []error{err}
-// 	}
+// Validate, Register, Charge, and Book in one-step
+func (form *Form) Submit(r *http.Request) (bookingId, bool) {
+	// validate
+	if !form.Validate(r) {
+		return 0, false
+	}
 
-// 	// charge
-// 	memo := memo(fields.Rate.String())
-// 	err = form.Ledger.Charge(
-// 		guestId,
-// 		fields.Rate.Amount,
-// 		fields.Card,
-// 		memo,
-// 	)
-// 	if err != nil {
-// 		glog.Error(err)
-// 		return 0, []error{err}
-// 	}
+	// register guest
+	guestId, err := form.guestbook.Register(
+		form.name,
+		form.email,
+		form.phone,
+	)
+	if err != nil {
+		glog.Error(err)
+		form.Errors["Register"] = err.Error()
+		return 0, false
+	}
 
-// 	// book
-// 	bookingId, err := form.Register.Book(
-// 		fields.Checkin,
-// 		fields.Checkout,
-// 		guestId,
-// 		fields.Rate,
-// 	)
-// 	if err != nil {
-// 		glog.Error(err)
-// 		return 0, []error{err}
-// 	}
+	// charge card
+	err = form.ledger.Charge(
+		guestId,
+		form.rate.Amount,
+		form.creditCard(),
+		memo(form.rate.String()),
+	)
+	if err != nil {
+		glog.Error(err)
+		form.Errors["Charge"] = err.Error()
+		return 0, false
+	}
 
-// 	return bookingId, []error{}
-// }
+	// book dates
+	bookingId, err := form.register.Book(
+		form.checkin,
+		form.checkout,
+		guestId,
+		form.rate,
+	)
+	if err != nil {
+		form.Errors["Book"] = err.Error()
+		glog.Error(err)
+		return 0, false
+	}
+
+	return bookingId, true
+}
+
+func (f *Form) creditCard() creditCard {
+	return creditCard{
+		CVC:    f.cardCVC,
+		Month:  f.cardMonth,
+		Number: f.cardNumber,
+		Year:   f.cardYear,
+	}
+}
 
 type validator struct {
 	Errors map[string]string
@@ -190,39 +215,56 @@ func (val validator) Require(k, v string) {
 	}
 }
 
-func (val validator) Integer(k, v string) {
-	if _, err := strconv.Atoi(v); err != nil {
+func (val validator) Integer(k, v string) int {
+	i, err := strconv.Atoi(v)
+	if err != nil {
 		val.Errors[k] = "invalid"
+		return 0
 	}
+	return i
 }
 
-func (val validator) Date(k, v string) {
-	log.Print("validating", v)
-	if _, err := date.Parse(v); err != nil {
+func (val validator) Date(k, v string) date.Date {
+	d, err := date.Parse(v)
+	if err != nil {
 		val.Errors[k] = "invalid"
+		return date.Date{}
 	}
+	return d
 }
 
-func (val validator) Name(k, v string) {
-	if _, err := newName(v); err != nil {
+func (val validator) Name(k, v string) name {
+	n, err := newName(v)
+	if err != nil {
 		val.Errors[k] = "invalid"
+		return name{}
 	}
+	return n
 }
 
-func (val validator) Email(k, v string) {
-	if _, err := newEmail(v); err != nil {
+func (val validator) Email(k, v string) email {
+	e, err := newEmail(v)
+	if err != nil {
 		val.Errors[k] = "invalid"
+		return email{}
 	}
+	return e
 }
 
-func (val validator) Phone(k, v string) {
-	if _, err := newPhoneNumber(v); err != nil {
+func (val validator) Phone(k, v string) phoneNumber {
+	p, err := newPhoneNumber(v)
+	if err != nil {
 		val.Errors[k] = "invalid"
+		return phoneNumber{}
 	}
+	return p
 }
 
-func (val validator) Rate(k, v string) {
-	if _, err := newRate(v); err != nil {
+func (val validator) Rate(k, v string) rate {
+	r, err := newRate(v)
+	if err != nil {
 		val.Errors[k] = "invalid"
+		return rate{}
 	}
+	return r
 }

@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"strconv"
 
 	"github.com/golang/glog"
 )
@@ -88,37 +87,6 @@ type creditCard struct {
 	Month  int
 	Number int
 	Year   int
-}
-
-var invalidCreditCard = errors.New("invalid credit card")
-
-func newCreditCard(cvc, month, number, year string) (creditCard, error) {
-	if cvc == "" || month == "" || number == "" || year == "" {
-		return creditCard{}, invalidCreditCard
-	}
-
-	c, err := strconv.Atoi(cvc)
-	if err != nil {
-		return creditCard{}, invalidCreditCard
-	}
-	m, err := strconv.Atoi(month)
-	if err != nil {
-		return creditCard{}, invalidCreditCard
-	}
-	n, err := strconv.Atoi(number)
-	if err != nil {
-		return creditCard{}, invalidCreditCard
-	}
-	y, err := strconv.Atoi(year)
-	if err != nil {
-		return creditCard{}, invalidCreditCard
-	}
-	return creditCard{
-		CVC:    c,
-		Month:  m,
-		Number: n,
-		Year:   y,
-	}, nil
 }
 
 // Summary of guest accounts

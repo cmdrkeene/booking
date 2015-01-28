@@ -60,7 +60,7 @@ func (r *Register) createTableOnce() {
 var (
 	checkInAfterOut = errors.New("check in can't be after check out")
 	stayTooShort    = errors.New("your stay is too short")
-	unavailable     = errors.New("unavailable")
+	unavailable     = errors.New("dates unavailable")
 	minimumStay     = 1 // day
 )
 

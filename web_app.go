@@ -22,6 +22,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) confirmation(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("Booking Confirmed!"))
 }
 
 func (h *Handler) index(w http.ResponseWriter, r *http.Request) {
@@ -31,18 +32,12 @@ func (h *Handler) index(w http.ResponseWriter, r *http.Request) {
 	case "GET":
 		render(w, templateForm, form)
 	case "POST":
-		if !form.Validate(r) {
+		_, ok := form.Submit(r)
+		if !ok {
 			render(w, templateForm, form)
 			return
 		}
-
-		// bookingId, err := form.Submit()
-		// if err != nil {
-		// 	http.Error(w, err.Error(), http.StatusInternalServerError)
-		// 	return
-		// }
-
-		// http.Redirect(w, r, path, http.StatusSeeOther)
+		http.Redirect(w, r, "/confirmation", http.StatusSeeOther)
 	default:
 		http.Error(
 			w,
