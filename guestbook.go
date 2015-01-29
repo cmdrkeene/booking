@@ -11,51 +11,23 @@ import (
 	"github.com/golang/glog"
 )
 
-// Locator for a guest record
-type guestId uint8
-
-func (id *guestId) Scan(src interface{}) error {
-	n, ok := src.(int64)
-	if !ok {
-		b, _ := src.([]byte)
-		err := errors.New(
-			fmt.Sprintf("can't scan guestId from db: %s", string(b)),
-		)
-		glog.Error(err)
-		return err
-	}
-	*id = guestId(n)
-	return nil
-}
-
-func (id guestId) Value() (driver.Value, error) {
-	return driver.Value(int64(id)), nil
-}
-
-func (id guestId) String() string {
-	return fmt.Sprintf("guestId:%d", id)
-}
-
-// A guest record
-type guest struct {
-	Email       email
-	Id          guestId
-	Name        name
-	PhoneNumber phoneNumber
-}
-
-// List of registered guests
+// Guestbook is list of registered guests
 type Guestbook struct {
 	DB *sql.DB `inject:""`
-
-	tableCreated bool
 }
+
+const GuestbookSchema = `
+  CREATE TABLE Guestbook (
+    Email TEXT UNIQUE NOT NULL,
+    Id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    Name TEXT NOT NULL,
+    PhoneNumber TEXT NOT NULL
+  )
+`
 
 var guestNotFound = errors.New("guest not found")
 
 func (g *Guestbook) Lookup(byId guestId) (guest, error) {
-	g.createTableOnce()
-
 	stmt, err := g.DB.Prepare(`
 		select Email, Id, Name, PhoneNumber 
 		from Guestbook 
@@ -130,8 +102,6 @@ func (g *Guestbook) RegisterTx(
 	email email,
 	phone phoneNumber,
 ) (guestId, error) {
-	g.createTableOnce()
-
 	stmt, err := tx.Prepare(`
       insert into Guestbook (Email, Name, PhoneNumber)
       values ($1, $2, $3)
@@ -155,25 +125,37 @@ func (g *Guestbook) RegisterTx(
 	return guestId(lastId), nil
 }
 
-func (g *Guestbook) createTableOnce() {
-	if g.tableCreated {
-		return
-	}
+// A guest record
+type guest struct {
+	Email       email
+	Id          guestId
+	Name        name
+	PhoneNumber phoneNumber
+}
 
-	_, err := g.DB.Exec(`
-    create table Guestbook (
-      Email text unique not null,
-      Id integer primary key autoincrement not null,
-      Name text not null,
-      PhoneNumber text not null
-    )
-  `)
-	if err == nil {
-		g.tableCreated = true
-		glog.Info("Guestbook table created")
-	} else {
-		glog.Warning(err)
+// Locator for a guest record
+type guestId uint8
+
+func (id *guestId) Scan(src interface{}) error {
+	n, ok := src.(int64)
+	if !ok {
+		b, _ := src.([]byte)
+		err := errors.New(
+			fmt.Sprintf("can't scan guestId from db: %s", string(b)),
+		)
+		glog.Error(err)
+		return err
 	}
+	*id = guestId(n)
+	return nil
+}
+
+func (id guestId) Value() (driver.Value, error) {
+	return driver.Value(int64(id)), nil
+}
+
+func (id guestId) String() string {
+	return fmt.Sprintf("guestId:%d", id)
 }
 
 // A guest's name - must be 2 parts, not empty

@@ -11,9 +11,9 @@ import (
 func TestRegister(t *testing.T) {
 	db := testDB()
 	defer db.Close()
-	var register Register
 	var calendar Calendar
-	err := inject.Populate(db, &register, &calendar)
+	var register Register
+	err := inject.Populate(&calendar, db, &register)
 	if err != nil {
 		t.Error(err)
 	}
@@ -42,13 +42,26 @@ func TestRegister(t *testing.T) {
 		t.Error("got ", err)
 	}
 
+	// book -> unavailable
+	_, err = register.Book(
+		date.New(2015, 3, 1),
+		date.New(2015, 3, 20),
+		guestId(123),
+		withBunny,
+	)
+	if err != unavailable {
+		t.Error("want", unavailable)
+		t.Error("got ", err)
+	}
+
 	// book -> ok
-	register.Calendar.Add(
+	calendar.Add(
 		date.New(2015, 1, 2),
 		date.New(2015, 1, 3),
 		date.New(2015, 1, 4),
 		date.New(2015, 1, 5),
 	)
+
 	id, err := register.Book(
 		date.New(2015, 1, 2),
 		date.New(2015, 1, 5),

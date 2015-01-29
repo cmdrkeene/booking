@@ -155,11 +155,12 @@ func (form *Form) Submit(r *http.Request) (bookingId, bool) {
 		return 0, false
 	}
 
-	// start a transaction, <Foo>Tx funcs call Tx.Rollback() on error
+	// start a transaction
 	tx, err := form.db.Begin()
 	if err != nil {
 		panic(err)
 	}
+	defer tx.Rollback()
 
 	// register guest
 	guestId, err := form.guestbook.RegisterTx(

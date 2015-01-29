@@ -9,6 +9,23 @@ import (
 	"github.com/golang/glog"
 )
 
+// Register is a container for booking records
+type Register struct {
+	Calendar *Calendar `inject:""`
+	DB       *sql.DB   `inject:""`
+}
+
+const RegisterSchema = `
+  CREATE TABLE Register (
+    Checkin DATETIME UNIQUE NOT NULL REFERENCES Calendar,
+    Checkout DATETIME UNIQUE NOT NULL REFERENCES Calendar,
+    GuestId INTEGER NOT NULL REFERENCES Guestbook(Id),
+    Id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    Rate TEXT NOT NULL,
+    CONSTRAINT ck_Ckin_Less_Than_Ckout CHECK (Checkin <= Checkout)
+  )
+`
+
 // Locator for a booking record
 type bookingId uint8
 
@@ -22,36 +39,6 @@ type booking struct {
 	GuestId  guestId
 	Id       bookingId
 	Rate     rate
-}
-
-// Official list of bookings
-type Register struct {
-	Calendar *Calendar `inject:""`
-	DB       *sql.DB   `inject:""`
-
-	tableCreated bool
-}
-
-func (r *Register) createTableOnce() {
-	if r.tableCreated {
-		return
-	}
-
-	_, err := r.DB.Exec(`
-		create table Register (
-	      Checkin datetime not null,
-	      Checkout datetime not null,
-	      GuestId integer not null,
-	      Id integer primary key autoincrement not null,
-	      Rate text not null
-	    )`,
-	)
-	if err == nil {
-		r.tableCreated = true
-		glog.Info("Register table created")
-	} else {
-		glog.Warning(err)
-	}
 }
 
 var (
@@ -96,8 +83,6 @@ func (r *Register) BookTx(
 	guest guestId,
 	rate rate,
 ) (bookingId, error) {
-	r.createTableOnce()
-
 	// check in can't be after check out
 	if checkIn.After(checkOut) {
 		return 0, checkInAfterOut
@@ -109,7 +94,7 @@ func (r *Register) BookTx(
 	}
 
 	// ensure on availablity calendar
-	available, err := r.Calendar.Available(checkIn, checkOut)
+	available, err := r.Calendar.Available(tx, checkIn, checkOut)
 	if err != nil {
 		glog.Error(err)
 		return 0, err
@@ -143,8 +128,6 @@ func (r *Register) BookTx(
 }
 
 func (r *Register) Cancel(id bookingId) error {
-	r.createTableOnce()
-
 	stmt, err := r.DB.Prepare(`delete from Register where Id=$1`)
 	if err != nil {
 		panic(err)
@@ -160,13 +143,11 @@ func (r *Register) Cancel(id bookingId) error {
 }
 
 func (r *Register) List() ([]booking, error) {
-	r.createTableOnce()
-
 	stmt, err := r.DB.Prepare(`
-      select Checkin, Checkout, GuestId, Id, Rate
-      from Register
-      order by CheckIn asc
-    `)
+    select Checkin, Checkout, GuestId, Id, Rate
+    from Register
+    order by CheckIn asc
+  `)
 	if err != nil {
 		panic(err)
 	}

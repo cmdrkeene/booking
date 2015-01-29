@@ -36,23 +36,32 @@ func main() {
 	var handler booking.Handler
 	var ledger booking.Ledger
 	var register booking.Register
+	var schema booking.Schema
 
 	// Dependency Injection
 	var g inject.Graph
 	err = g.Provide(
 		&inject.Object{Value: &calendar},
+		&inject.Object{Value: db},
 		&inject.Object{Value: &formBuilder},
 		&inject.Object{Value: &guestbook},
 		&inject.Object{Value: &handler},
 		&inject.Object{Value: &ledger},
 		&inject.Object{Value: &register},
-		&inject.Object{Value: db},
+		&inject.Object{Value: &schema},
 	)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 	if err = g.Populate(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+
+	// Load schema
+	err = schema.Load()
+	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}

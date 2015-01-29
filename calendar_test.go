@@ -56,13 +56,18 @@ func TestCalendar(t *testing.T) {
 		{date.New(2014, 1, 1), date.New(2014, 1, 3), false},
 		{date.New(2013, 12, 31), date.New(2014, 1, 2), false},
 	}
+	tx, err := db.Begin()
+	if err != nil {
+		t.Fatal(err)
+	}
 	for _, tt := range rangeTests {
-		if ok, _ := cal.Available(tt.start, tt.stop); ok != tt.ok {
+		if ok, _ := cal.Available(tx, tt.start, tt.stop); ok != tt.ok {
 			t.Log(tt.start, tt.stop)
 			t.Error("want", tt.ok)
 			t.Error("got ", ok)
 		}
 	}
+	tx.Commit()
 
 	// Remove -> ok
 	err = cal.Remove(list[0])
