@@ -9,6 +9,11 @@ The goal is to explore new techniques for building rich applications in
 
 ## Dependencies
 
+Go 1.4+
+
+Relies on fix for [Issue 131650043](https://codereview.appspot.com/131650043)
+
+
 These should be kept to an absolute minimum and the standard library should be
 used as much as possible.
 
