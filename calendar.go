@@ -8,35 +8,29 @@ import (
 )
 
 // List of dates available for booking
+// TODO turn Calendar into CalendarTx?
 type Calendar struct {
 	DB *sql.DB `inject:""`
 }
 
-const CalendarSchema = `
-  CREATE TABLE Calendar (
-    Date DATETIME UNIQUE NOT NULL
-  )
-`
-
-func (c *Calendar) Add(dates ...date.Date) error {
-	stmt, err := c.DB.Prepare(`insert into Calendar (Date) values ($1)`)
-	if err != nil {
-		panic(err)
-	}
-
-	for _, d := range dates {
-		_, err := stmt.Exec(d)
-		if err != nil {
-			glog.Error(err)
-			return err
-		}
-		glog.Infoln("added", d, "to availabilty calendar")
-	}
-	return nil
+type CalendarDB struct {
+	*sql.DB
 }
 
-func (c *Calendar) Available(tx *sql.Tx, start, stop date.Date) (bool, error) {
-	list, err := c.ListTx(tx)
+func (db *CalendarDB) Begin() (*CalendarTx, error) {
+	tx, err := db.DB.Begin()
+	if err != nil {
+		return nil, err
+	}
+	return &CalendarTx{tx}, nil
+}
+
+type CalendarTx struct {
+	*sql.Tx
+}
+
+func (tx *CalendarTx) Available(start, stop date.Date) (bool, error) {
+	list, err := tx.List()
 	if err != nil {
 		return false, err
 	}
@@ -61,30 +55,7 @@ func (c *Calendar) Available(tx *sql.Tx, start, stop date.Date) (bool, error) {
 	return true, nil
 }
 
-func (c *Calendar) List() ([]date.Date, error) {
-	tx, err := c.DB.Begin()
-	if err != nil {
-		return []date.Date{}, err
-	}
-
-	list, err := c.ListTx(tx)
-	if err != nil {
-		tx.Rollback()
-		glog.Error(err)
-		return []date.Date{}, err
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		glog.Error(err)
-		return []date.Date{}, err
-	}
-
-	return list, nil
-
-}
-
-func (c *Calendar) ListTx(tx *sql.Tx) ([]date.Date, error) {
+func (tx *CalendarTx) List() ([]date.Date, error) {
 	stmt, err := tx.Prepare(`select Date from Calendar`)
 	if err != nil {
 		panic(err)
@@ -110,6 +81,73 @@ func (c *Calendar) ListTx(tx *sql.Tx) ([]date.Date, error) {
 
 	err = rows.Err()
 	if err != nil {
+		return []date.Date{}, err
+	}
+
+	return list, nil
+}
+
+const CalendarSchema = `
+  CREATE TABLE Calendar (
+    Date DATETIME UNIQUE NOT NULL
+  )
+`
+
+func (c *Calendar) Add(dates ...date.Date) error {
+	stmt, err := c.DB.Prepare(`insert into Calendar (Date) values ($1)`)
+	if err != nil {
+		panic(err)
+	}
+
+	for _, d := range dates {
+		_, err := stmt.Exec(d)
+		if err != nil {
+			glog.Error(err)
+			return err
+		}
+		glog.Infoln("added", d, "to availabilty calendar")
+	}
+	return nil
+}
+
+func (c *Calendar) Available(start, stop date.Date) (bool, error) {
+	db := &CalendarDB{c.DB}
+	tx, err := db.Begin()
+	if err != nil {
+		return false, err
+	}
+
+	ok, err := tx.Available(start, stop)
+	if err != nil {
+		tx.Rollback()
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		glog.Error(err)
+		return false, err
+	}
+
+	return ok, nil
+}
+
+func (c *Calendar) List() ([]date.Date, error) {
+	db := &CalendarDB{c.DB}
+	tx, err := db.Begin()
+	if err != nil {
+		return []date.Date{}, err
+	}
+
+	list, err := tx.List()
+	if err != nil {
+		tx.Rollback()
+		glog.Error(err)
+		return []date.Date{}, err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		glog.Error(err)
 		return []date.Date{}, err
 	}
 

@@ -94,7 +94,8 @@ func (r *Register) BookTx(
 	}
 
 	// ensure on availablity calendar
-	available, err := r.Calendar.Available(tx, checkIn, checkOut)
+	calendar := &CalendarTx{tx}
+	available, err := calendar.Available(checkIn, checkOut)
 	if err != nil {
 		glog.Error(err)
 		return 0, err
