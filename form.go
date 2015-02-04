@@ -163,8 +163,8 @@ func (form *Form) Submit(r *http.Request) (bookingId, bool) {
 	defer tx.Rollback()
 
 	// register guest
-	guestId, err := form.guestbook.RegisterTx(
-		tx,
+	guestbookTx := &GuestbookTx{tx}
+	guestId, err := guestbookTx.Register(
 		form.name,
 		form.email,
 		form.phone,

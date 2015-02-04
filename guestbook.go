@@ -28,7 +28,58 @@ const GuestbookSchema = `
 var guestNotFound = errors.New("guest not found")
 
 func (g *Guestbook) Lookup(byId guestId) (guest, error) {
-	stmt, err := g.DB.Prepare(`
+	var guest guest
+	err := g.withTx(func(tx *GuestbookTx) error {
+		var err error
+		guest, err = tx.Lookup(byId)
+		return err
+	})
+	return guest, err
+}
+
+// Emails are unique
+func (g *Guestbook) Register(
+	name name,
+	email email,
+	phone phoneNumber,
+) (guestId, error) {
+	var id guestId
+	err := g.withTx(func(tx *GuestbookTx) error {
+		var err error
+		id, err = tx.Register(name, email, phone)
+		return err
+	})
+	return id, err
+}
+
+// Wraps fn to provide a CalendarTx that calls Rollback on err, Commit on ok
+// Theoretically you could call a series of funcs for batch
+func (g *Guestbook) withTx(fn func(*GuestbookTx) error) error {
+	dbTx, err := g.DB.Begin()
+	if err != nil {
+		return err
+	}
+	tx := &GuestbookTx{dbTx}
+	err = fn(tx)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+type GuestbookTx struct {
+	*sql.Tx
+}
+
+func (tx *GuestbookTx) Lookup(byId guestId) (guest, error) {
+	stmt, err := tx.Prepare(`
 		select Email, Id, Name, PhoneNumber 
 		from Guestbook 
 		where Id = $1`,
@@ -67,37 +118,7 @@ func (g *Guestbook) Lookup(byId guestId) (guest, error) {
 	}, nil
 }
 
-// Emails are unique
-func (g *Guestbook) Register(
-	name name,
-	email email,
-	phone phoneNumber,
-) (guestId, error) {
-	tx, err := g.DB.Begin()
-	if err != nil {
-		glog.Error(err)
-		return 0, err
-	}
-
-	guestId, err := g.RegisterTx(tx, name, email, phone)
-	if err != nil {
-		tx.Rollback()
-		glog.Error(err)
-		return 0, err
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		glog.Error(err)
-		return 0, err
-	}
-
-	return guestId, nil
-}
-
-// Register with a passed Tx - caller is responsible for Commit/Rollback
-func (g *Guestbook) RegisterTx(
-	tx *sql.Tx,
+func (tx *GuestbookTx) Register(
 	name name,
 	email email,
 	phone phoneNumber,
