@@ -11,31 +11,28 @@ import (
 
 // Builds Form instances
 type FormBuilder struct {
-	Calendar  *Calendar  `inject:""`
-	DB        *sql.DB    `inject:""`
-	Guestbook *Guestbook `inject:""`
-	Ledger    *Ledger    `inject:""`
-	Register  *Register  `inject:""`
+	Calendar *Calendar `inject:""`
+	DB       *sql.DB   `inject:""`
+	Ledger   *Ledger   `inject:""`
+	Register *Register `inject:""`
 }
 
 func (b *FormBuilder) Build() *Form {
 	return &Form{
-		calendar:  b.Calendar,
-		db:        b.DB,
-		guestbook: b.Guestbook,
-		ledger:    b.Ledger,
-		register:  b.Register,
+		calendar: b.Calendar,
+		db:       b.DB,
+		ledger:   b.Ledger,
+		register: b.Register,
 	}
 }
 
 // One page booking form
 type Form struct {
 	// Dependencies
-	calendar  *Calendar
-	db        *sql.DB
-	guestbook *Guestbook
-	ledger    *Ledger
-	register  *Register
+	calendar *Calendar
+	db       *sql.DB
+	ledger   *Ledger
+	register *Register
 
 	// Errors
 	Errors map[string]string
